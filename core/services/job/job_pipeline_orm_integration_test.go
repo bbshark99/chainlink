@@ -47,9 +47,9 @@ func TestPipelineORM_Integration(t *testing.T) {
 	config.Set("MAX_HTTP_ATTEMPTS", "1")
 	defer cleanupDB()
 	db := oldORM.DB
+	ethKeyStore := cltest.NewKeyStore(t, db).Eth()
 
-	key := cltest.MustInsertRandomKey(t, db)
-	transmitterAddress := key.Address.Address()
+	_, transmitterAddress := cltest.MustInsertRandomKey(t, db, ethKeyStore)
 
 	var specID int32
 

@@ -57,7 +57,7 @@ var (
 // adapters have this minimum requirement.
 type BaseAdapter interface {
 	TaskType() models.TaskType
-	Perform(models.RunInput, *store.Store, *keystore.Master) models.RunOutput
+	Perform(models.RunInput, *store.Store, keystore.Master) models.RunOutput
 }
 
 // PipelineAdapter wraps a BaseAdapter with requirements for execution in the pipeline.

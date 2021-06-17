@@ -75,8 +75,6 @@ func TestClient_ListP2PKeys(t *testing.T) {
 	t.Parallel()
 
 	app := startNewApplication(t)
-	app.GetKeyStore().OCR().Unlock(cltest.Password)
-
 	key, err := p2pkey.CreateKey()
 	require.NoError(t, err)
 	encKey, err := key.ToEncryptedP2PKey(cltest.Password, utils.FastScryptParams)
@@ -100,8 +98,6 @@ func TestClient_CreateP2PKey(t *testing.T) {
 	app := startNewApplication(t)
 	client, _ := app.NewClientAndRenderer()
 
-	app.GetKeyStore().OCR().Unlock(cltest.Password)
-
 	require.NoError(t, client.CreateP2PKey(nilContext))
 
 	keys, err := app.GetKeyStore().OCR().FindEncryptedP2PKeys()
@@ -121,8 +117,6 @@ func TestClient_DeleteP2PKey(t *testing.T) {
 
 	app := startNewApplication(t)
 	client, _ := app.NewClientAndRenderer()
-
-	app.GetKeyStore().OCR().Unlock(cltest.Password)
 
 	key, err := p2pkey.CreateKey()
 	require.NoError(t, err)
@@ -151,8 +145,6 @@ func TestClient_ImportExportP2PKeyBundle(t *testing.T) {
 
 	app := startNewApplication(t)
 	client, _ := app.NewClientAndRenderer()
-
-	app.GetKeyStore().OCR().Unlock(cltest.Password)
 
 	keys := requireP2PKeyCount(t, app, 1)
 	key := keys[0]

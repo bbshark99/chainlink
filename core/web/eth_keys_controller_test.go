@@ -25,7 +25,7 @@ func TestETHKeysController_Index_Success(t *testing.T) {
 	)
 	t.Cleanup(cleanup)
 
-	cltest.MustAddRandomKeyToKeystore(t, app.KeyStore.Eth(), true)
+	cltest.MustInsertRandomKey(t, app.Store.DB, app.KeyStore.Eth(), true)
 
 	ethClient.On("BalanceAt", mock.Anything, mock.Anything, mock.Anything).Return(big.NewInt(256), nil).Once()
 	ethClient.On("BalanceAt", mock.Anything, mock.Anything, mock.Anything).Return(big.NewInt(1), nil).Once()
@@ -68,7 +68,7 @@ func TestETHKeysController_Index_NotDev(t *testing.T) {
 	)
 	t.Cleanup(cleanup)
 
-	cltest.MustAddRandomKeyToKeystore(t, app.KeyStore.Eth(), true)
+	cltest.MustInsertRandomKey(t, app.Store.DB, app.KeyStore.Eth(), true)
 
 	ethClient.On("BalanceAt", mock.Anything, mock.Anything, mock.Anything).Return(big.NewInt(256), nil).Once()
 	ethClient.On("GetLINKBalance", mock.Anything, mock.Anything).Return(assets.NewLink(256), nil).Once()

@@ -57,6 +57,7 @@ func TestRunner(t *testing.T) {
 	eventBroadcaster := postgres.NewEventBroadcaster(config.DatabaseURL(), 0, 0)
 	eventBroadcaster.Start()
 	defer eventBroadcaster.Close()
+	ethKeyStore := cltest.NewKeyStore(t, db).Eth()
 
 	pipelineORM := pipeline.NewORM(db)
 	runner := pipeline.NewRunner(pipelineORM, config, nil, nil, nil, nil)
@@ -66,8 +67,7 @@ func TestRunner(t *testing.T) {
 	runner.Start()
 	defer runner.Close()
 
-	key := cltest.MustInsertRandomKey(t, db, 0)
-	transmitterAddress := key.Address.Address()
+	_, transmitterAddress := cltest.MustInsertRandomKey(t, db, ethKeyStore, 0)
 
 	ethClient, _, _ := cltest.NewEthMocks(t)
 	ethClient.On("HeadByNumber", mock.Anything, (*big.Int)(nil)).Return(cltest.Head(10), nil)
@@ -823,7 +823,7 @@ observationSource   = """
 	ds1 [type=bridge async=true name="bridge" timeout=0 requestData=<{"value": $(parse)}>]
 	ds1_parse [type=jsonparse lax=false  path="data,result"]
 	ds1_multiply [type=multiply times=1000000000000000000 index=0]
-	
+
 	parse->ds1->ds1_parse->ds1_multiply;
 """
     `, jobUUID, eiName, cltest.MustJSONMarshal(t, eiSpec))

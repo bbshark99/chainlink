@@ -21,7 +21,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind/backends"
-	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/eth/ethconfig"
@@ -59,12 +58,11 @@ type fluxAggregatorUniverse struct {
 // setupFluxAggregatorUniverse returns a fully initialized fluxAggregator universe. The
 // arguments match the arguments of the same name in the FluxAggregator
 // constructor.
-func setupFluxAggregatorUniverse(t *testing.T, key ethkey.Key, min, max *big.Int) fluxAggregatorUniverse {
-	k, err := keystore.DecryptKey(key.JSON, cltest.Password)
-	require.NoError(t, err)
-	oracleTransactor := cltest.MustNewSimulatedBackendKeyedTransactor(t, k.PrivateKey)
+func setupFluxAggregatorUniverse(t *testing.T, key ethkey.KeyV2, min, max *big.Int) fluxAggregatorUniverse {
+	oracleTransactor := cltest.MustNewSimulatedBackendKeyedTransactor(t, key.ToEcdsaPrivKey())
 
 	var f fluxAggregatorUniverse
+	var err error
 	f.sergey = cltest.NewSimulatedBackendIdentity(t)
 	f.neil = cltest.NewSimulatedBackendIdentity(t)
 	f.ned = cltest.NewSimulatedBackendIdentity(t)

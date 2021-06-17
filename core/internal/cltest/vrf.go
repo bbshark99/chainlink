@@ -13,7 +13,7 @@ import (
 
 // StoredVRFKey creates a VRFKeyStore on store, imports a known VRF key into it,
 // and returns the corresponding public key.
-func StoredVRFKey(t *testing.T, ks *keystore.VRF) *secp256k1.PublicKey {
+func StoredVRFKey(t *testing.T, ks keystore.VRF) *secp256k1.PublicKey {
 	keyFile, err := ioutil.ReadFile("../../tools/clroot/vrfkey.json")
 	require.NoError(t, err)
 	rawPassword, err := ioutil.ReadFile("../../tools/clroot/password.txt")
@@ -21,8 +21,8 @@ func StoredVRFKey(t *testing.T, ks *keystore.VRF) *secp256k1.PublicKey {
 	password := strings.TrimSpace(string(rawPassword))
 	_, err = ks.Import(keyFile, password)
 	require.NoError(t, err)
-	keys, err := ks.Unlock(password) // Extracts public key
+	keys, err := ks.ListKeys() // Extracts public key
 	require.NoError(t, err)
 	require.Len(t, keys, 1)
-	return &keys[0]
+	return keys[0]
 }

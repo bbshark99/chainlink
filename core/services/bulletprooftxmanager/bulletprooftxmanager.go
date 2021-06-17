@@ -61,9 +61,10 @@ type Config interface {
 
 // KeyStore encompasses the subset of keystore used by bulletprooftxmanager
 type KeyStore interface {
-	AllKeys() (keys []ethkey.Key, err error)
+	AllKeys() (keys []ethkey.KeyV2, err error)
 	SignTx(fromAddress common.Address, tx *gethTypes.Transaction, chainID *big.Int) (*gethTypes.Transaction, error)
 	SubscribeToKeyChanges() (ch chan struct{}, unsub func())
+	GetStateForKey(ethkey.KeyV2) (ethkey.State, error)
 }
 
 // For more information about the BulletproofTxManager architecture, see the design doc:

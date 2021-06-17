@@ -57,7 +57,7 @@ type Delegate struct {
 	txm                txManager
 	jobORM             job.ORM
 	config             DelegateConfig
-	keyStore           *keystore.OCR
+	keyStore           keystore.OCR
 	pipelineRunner     pipeline.Runner
 	ethClient          eth.Client
 	logBroadcaster     log.Broadcaster
@@ -74,7 +74,7 @@ func NewDelegate(
 	txm txManager,
 	jobORM job.ORM,
 	config DelegateConfig,
-	keyStore *keystore.OCR,
+	keyStore keystore.OCR,
 	pipelineRunner pipeline.Runner,
 	ethClient eth.Client,
 	logBroadcaster log.Broadcaster,

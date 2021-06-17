@@ -54,3 +54,11 @@ func (k *Key) Unsafe_GetPrivateKey() ([]byte, error) {
 
 	return k.privateKey, nil
 }
+
+func (k *Key) ToV2() KeyV2 {
+	return KeyV2{
+		privateKey: k.privateKey,
+		PublicKey:  ed25519.PublicKey(k.PublicKey),
+		Version:    1,
+	}
+}

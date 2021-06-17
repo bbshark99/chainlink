@@ -51,7 +51,7 @@ type (
 
 	// SingletonPeerWrapper manages all libocr peers for the application
 	SingletonPeerWrapper struct {
-		keyStore *keystore.OCR
+		keyStore keystore.OCR
 		config   NetworkingConfig
 		db       *gorm.DB
 
@@ -66,7 +66,7 @@ type (
 // NewSingletonPeerWrapper creates a new peer based on the p2p keys in the keystore
 // It currently only supports one peerID/key
 // It should be fairly easy to modify it to support multiple peerIDs/keys using e.g. a map
-func NewSingletonPeerWrapper(keyStore *keystore.OCR, config *config.Config, db *gorm.DB) *SingletonPeerWrapper {
+func NewSingletonPeerWrapper(keyStore keystore.OCR, config *config.Config, db *gorm.DB) *SingletonPeerWrapper {
 	return &SingletonPeerWrapper{
 		keyStore: keyStore,
 		config:   config,

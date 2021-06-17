@@ -48,7 +48,6 @@ func TestKeyStoreEndToEnd(t *testing.T) {
 	defer cleanup()
 
 	ks := cltest.NewKeyStore(t, store.DB).VRF()
-	ks.Unlock(phrase)
 	key, err := ks.CreateKey() // NB: Varies from run to run. Shouldn't matter, though
 	require.NoError(t, err, "could not create encrypted key")
 	require.NoError(t, ks.Forget(key), "could not forget a created key from in-memory store")
@@ -56,10 +55,6 @@ func TestKeyStoreEndToEnd(t *testing.T) {
 	keys, err := ks.Get() // Test generic Get
 	require.NoError(t, err, "failed to retrieve expected key from db")
 	assert.True(t, len(keys) == 1 && keys[0].PublicKey == key, "did not get back the expected key from db retrial")
-
-	ophrase := phrase + "corruption" // Cannot unlock with the wrong phrase
-	_, err = ks.Unlock(ophrase)
-	require.Error(t, err)
 
 	keys, err = ks.Get(key) // Test targeted Get
 	require.NoError(t, err, "key database retrieval failed")
@@ -70,10 +65,10 @@ func TestKeyStoreEndToEnd(t *testing.T) {
 	require.NoError(t, err, "could not retrieve keys from db")
 	require.Len(t, keys, 1, "failed to remember the key just created")
 
-	unlockedKeys, err := ks.Unlock(phrase) // Unlocking enables generation of proofs
+	unlockedKeys, err := ks.ListKeys() // Unlocking enables generation of proofs
 	require.NoError(t, err)
 	assert.Len(t, unlockedKeys, 1, "should have only unlocked one key")
-	assert.Equal(t, unlockedKeys[0], key, "should have only unlocked the key with the offered password")
+	assert.Equal(t, *unlockedKeys[0], key, "should have only unlocked the key with the offered password")
 
 	blockHash := common.Hash{}
 	blockNum := 0

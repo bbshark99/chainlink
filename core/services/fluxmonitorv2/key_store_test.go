@@ -17,7 +17,6 @@ func TestKeyStore_SendingKeys(t *testing.T) {
 
 	ks := fluxmonitorv2.NewKeyStore(ethKeyStore)
 
-	ethKeyStore.Unlock(cltest.Password)
 	key, err := ethKeyStore.CreateNewKey()
 	require.NoError(t, err)
 
@@ -34,8 +33,8 @@ func TestKeyStore_GetRoundRobinAddress(t *testing.T) {
 	t.Cleanup(cleanup)
 	ethKeyStore := cltest.NewKeyStore(t, s.DB).Eth()
 
-	cltest.MustAddRandomKeyToKeystore(t, ethKeyStore, 0, true)
-	_, k0Address := cltest.MustAddRandomKeyToKeystore(t, ethKeyStore, 0)
+	cltest.MustInsertRandomKey(t, s.DB, ethKeyStore, 0, true)
+	_, k0Address := cltest.MustInsertRandomKey(t, s.DB, ethKeyStore, 0)
 
 	ks := fluxmonitorv2.NewKeyStore(ethKeyStore)
 

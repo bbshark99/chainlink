@@ -24,7 +24,7 @@ func (e *EthBool) TaskType() models.TaskType {
 // For example, after converting the result false to hex encoded Ethereum
 // ABI, it would be:
 // "0x0000000000000000000000000000000000000000000000000000000000000000"
-func (*EthBool) Perform(input models.RunInput, _ *store.Store, _ *keystore.Master) models.RunOutput {
+func (*EthBool) Perform(input models.RunInput, _ *store.Store, _ keystore.Master) models.RunOutput {
 	if boolean(input.Result().Type) {
 		return models.NewRunOutputCompleteWithResult(evmTrue, input.ResultCollection())
 	}

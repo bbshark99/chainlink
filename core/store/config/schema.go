@@ -83,6 +83,7 @@ type ConfigSchema struct {
 	FeatureExternalInitiators                  bool                          `env:"FEATURE_EXTERNAL_INITIATORS" default:"false"`
 	FeatureFluxMonitor                         bool                          `env:"FEATURE_FLUX_MONITOR" default:"true"`
 	FeatureFluxMonitorV2                       bool                          `env:"FEATURE_FLUX_MONITOR_V2" default:"true"`
+	FeatureFastKeyStore                        bool                          `env:"FEATURE_FAST_KEY_STORE" default:"false"`
 	FeatureOffchainReporting                   bool                          `env:"FEATURE_OFFCHAIN_REPORTING" default:"false"`
 	FeatureWebhookV2                           bool                          `env:"FEATURE_WEBHOOK_V2" default:"false"`
 	FlagsContractAddress                       string                        `env:"FLAGS_CONTRACT_ADDRESS"`

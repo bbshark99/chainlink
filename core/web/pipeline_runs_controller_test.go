@@ -278,7 +278,7 @@ func setupPipelineRunsControllerTests(t *testing.T) (cltest.HTTPClientCleaner, i
 	client := app.NewHTTPClient()
 	mockHTTP, cleanupHTTP := cltest.NewHTTPMockServer(t, http.StatusOK, "GET", `{"USD": 1}`)
 
-	key := cltest.MustInsertRandomKey(t, app.Store.DB)
+	key, _ := cltest.MustInsertRandomKey(t, app.Store.DB, app.KeyStore.Eth())
 
 	sp := fmt.Sprintf(`
 	type               = "offchainreporting"
@@ -309,9 +309,6 @@ func setupPipelineRunsControllerTests(t *testing.T) (cltest.HTTPClientCleaner, i
 	err = toml.Unmarshal([]byte(sp), &os)
 	require.NoError(t, err)
 	ocrJobSpec.OffchainreportingOracleSpec = &os
-
-	err = app.GetKeyStore().OCR().Unlock(cltest.Password)
-	require.NoError(t, err)
 
 	jb, err := app.AddJobV2(context.Background(), ocrJobSpec, null.String{})
 	require.NoError(t, err)

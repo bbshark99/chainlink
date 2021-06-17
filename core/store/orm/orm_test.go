@@ -1168,6 +1168,7 @@ INSERT INTO eth_task_run_txes (task_run_id, eth_tx_id) VALUES (?, ?)
 func TestORM_RemoveUnstartedTransaction_RemoveByEthTx(t *testing.T) {
 	store, cleanup := cltest.NewStore(t)
 	defer cleanup()
+	ethKeyStore := cltest.NewKeyStore(t, store.DB).Eth()
 
 	jobSpec := cltest.NewJobWithRunLogInitiator()
 	require.NoError(t, store.CreateJob(&jobSpec))
@@ -1186,7 +1187,7 @@ func TestORM_RemoveUnstartedTransaction_RemoveByEthTx(t *testing.T) {
 	startedJobRun.Status = models.RunStatusInProgress
 	require.NoError(t, store.CreateJobRun(&startedJobRun))
 
-	key := cltest.MustInsertRandomKey(t, store.DB)
+	key, _ := cltest.MustInsertRandomKey(t, store.DB, ethKeyStore)
 	ethTx := cltest.NewEthTx(t, key.Address.Address())
 	require.NoError(t, store.DB.Create(&ethTx).Error)
 
@@ -1261,9 +1262,9 @@ func TestORM_EthTransactionsWithAttempts(t *testing.T) {
 	store, cleanup := cltest.NewStore(t)
 	defer cleanup()
 	db := store.DB
-	ethKeyStore := cltest.NewKeyStore(t, store.DB).Eth()
+	ethKeyStore := cltest.NewKeyStore(t, db).Eth()
 
-	_, from := cltest.MustAddRandomKeyToKeystore(t, ethKeyStore, 0)
+	_, from := cltest.MustInsertRandomKey(t, db, ethKeyStore, 0)
 
 	cltest.MustInsertConfirmedEthTxWithAttempt(t, db, 0, 1, from)        // tx1
 	tx2 := cltest.MustInsertConfirmedEthTxWithAttempt(t, db, 1, 2, from) // tx2

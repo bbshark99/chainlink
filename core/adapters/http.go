@@ -35,7 +35,7 @@ func (hga *HTTPGet) TaskType() models.TaskType {
 
 // Perform ensures that the adapter's URL responds to a GET request without
 // errors and returns the response body as the "value" field of the result.
-func (hga *HTTPGet) Perform(input models.RunInput, store *store.Store, _ *keystore.Master) models.RunOutput {
+func (hga *HTTPGet) Perform(input models.RunInput, store *store.Store, _ keystore.Master) models.RunOutput {
 	request, err := hga.GetRequest()
 	if err != nil {
 		return models.NewRunOutputError(err)
@@ -83,7 +83,7 @@ func (hpa *HTTPPost) TaskType() models.TaskType {
 
 // Perform ensures that the adapter's URL responds to a POST request without
 // errors and returns the response body as the "value" field of the result.
-func (hpa *HTTPPost) Perform(input models.RunInput, store *store.Store, _ *keystore.Master) models.RunOutput {
+func (hpa *HTTPPost) Perform(input models.RunInput, store *store.Store, _ keystore.Master) models.RunOutput {
 	request, err := hpa.GetRequest(input.Data().String())
 	if err != nil {
 		return models.NewRunOutputError(err)

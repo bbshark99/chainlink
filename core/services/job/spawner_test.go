@@ -53,13 +53,13 @@ func TestSpawner_CreateJobDeleteJob(t *testing.T) {
 	config, oldORM, cleanupDB := heavyweight.FullTestORM(t, "services_job_spawner", true, true)
 	defer cleanupDB()
 	db := oldORM.DB
+	ethKeyStore := cltest.NewKeyStore(t, db).Eth()
 
 	eventBroadcaster := postgres.NewEventBroadcaster(config.DatabaseURL(), 0, 0)
 	eventBroadcaster.Start()
 	defer eventBroadcaster.Close()
 
-	key := cltest.MustInsertRandomKey(t, db)
-	address := key.Address.Address()
+	_, address := cltest.MustInsertRandomKey(t, db, ethKeyStore)
 	_, bridge := cltest.NewBridgeType(t, "voter_turnout", "http://blah.com")
 	require.NoError(t, db.Create(bridge).Error)
 	_, bridge2 := cltest.NewBridgeType(t, "election_winner", "http://blah.com")

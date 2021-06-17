@@ -73,6 +73,7 @@ type EnvPrinter struct {
 	FMDefaultTransactionQueueDepth             uint32          `json:"FM_DEFAULT_TRANSACTION_QUEUE_DEPTH"`
 	FeatureExternalInitiators                  bool            `json:"FEATURE_EXTERNAL_INITIATORS"`
 	FeatureFluxMonitor                         bool            `json:"FEATURE_FLUX_MONITOR"`
+	FeatureFastKeyStore                        bool            `json:"FEATURE_FAST_KEY_STORE"`
 	FeatureOffchainReporting                   bool            `json:"FEATURE_OFFCHAIN_REPORTING"`
 	FlagsContractAddress                       string          `json:"FLAGS_CONTRACT_ADDRESS"`
 	GasEstimatorMode                           string          `json:"GAS_ESTIMATOR_MODE"`
@@ -177,6 +178,7 @@ func NewConfigPrinter(store *store.Store) (ConfigPrinter, error) {
 			FMDefaultTransactionQueueDepth:             config.FMDefaultTransactionQueueDepth(),
 			FeatureExternalInitiators:                  config.FeatureExternalInitiators(),
 			FeatureFluxMonitor:                         config.FeatureFluxMonitor(),
+			FeatureFastKeyStore:                        config.FeatureFastKeyStore(),
 			FeatureOffchainReporting:                   config.FeatureOffchainReporting(),
 			FlagsContractAddress:                       config.FlagsContractAddress(),
 			GasEstimatorMode:                           config.GasEstimatorMode(),

@@ -51,7 +51,7 @@ type vrfUniverse struct {
 	prm       pipeline.ORM
 	lb        *log_mocks.Broadcaster
 	ec        *eth_mocks.Client
-	ks        *keystore.Master
+	ks        keystore.Master
 	vrfkey    secp256k1.PublicKey
 	submitter common.Address
 	txm       *bptxmmocks.TxManager
@@ -75,12 +75,10 @@ func buildVrfUni(t *testing.T, db *gorm.DB, cfg *config.Config) vrfUniverse {
 	txm := new(bptxmmocks.TxManager)
 	t.Cleanup(func() { txm.AssertExpectations(t) })
 	pr := pipeline.NewRunner(prm, cfg, ec, ks.Eth(), ks.VRF(), txm)
-	require.NoError(t, ks.Eth().Unlock("blah"))
+	require.NoError(t, ks.Unlock("blah"))
 	_, err = ks.Eth().CreateNewKey()
 	require.NoError(t, err)
 	submitter, err := ks.Eth().GetRoundRobinAddress()
-	require.NoError(t, err)
-	_, err = ks.VRF().Unlock("blah")
 	require.NoError(t, err)
 	vrfkey, err := ks.VRF().CreateKey()
 	require.NoError(t, err)
@@ -178,9 +176,8 @@ func TestStartingCounts(t *testing.T) {
 	db := pgtest.NewGormDB(t)
 	counts := getStartingResponseCounts(db, logger.Default)
 	assert.Equal(t, 0, len(counts))
-
 	ks := keystore.New(db, utils.FastScryptParams)
-	ks.Eth().Unlock("blah")
+	ks.Unlock("blah")
 	k, err := ks.Eth().CreateNewKey()
 	require.NoError(t, err)
 	b := time.Now()

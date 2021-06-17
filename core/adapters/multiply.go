@@ -23,7 +23,7 @@ func (m *Multiply) TaskType() models.TaskType {
 //
 // For example, if input value is "99.994" and the adapter's "times" is
 // set to "100", the result's value will be "9999.4".
-func (m *Multiply) Perform(input models.RunInput, _ *store.Store, _ *keystore.Master) models.RunOutput {
+func (m *Multiply) Perform(input models.RunInput, _ *store.Store, _ keystore.Master) models.RunOutput {
 	val := input.Result()
 	dec, err := decimal.NewFromString(val.String())
 	if err != nil {

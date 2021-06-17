@@ -21,3 +21,5 @@ func (k onChainPrivateKey) Address() OnChainSigningAddress {
 func onChainHash(msg []byte) []byte {
 	return crypto.Keccak256(msg)
 }
+
+// TODO - RYAN - print and to-string functions

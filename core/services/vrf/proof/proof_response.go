@@ -96,7 +96,7 @@ func GenerateProofResponseFromProof(proof vrfkey.Proof, s PreSeedData) (Marshale
 	return rv, nil
 }
 
-func GenerateProofResponse(keystore *keystore.VRF, key secp256k1.PublicKey, s PreSeedData) (
+func GenerateProofResponse(keystore keystore.VRF, key secp256k1.PublicKey, s PreSeedData) (
 	MarshaledOnChainResponse, error) {
 	seed := FinalSeed(s)
 	proof, err := keystore.GenerateProof(key, seed)

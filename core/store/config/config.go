@@ -439,6 +439,11 @@ func (c Config) FeatureFluxMonitorV2() bool {
 	return c.getWithFallback("FeatureFluxMonitorV2", parseBool).(bool)
 }
 
+// FeatureFastKeyStore enables the master keystore
+func (c Config) FeatureFastKeyStore() bool {
+	return c.viper.GetBool(EnvVarName("FeatureFastKeyStore"))
+}
+
 // FeatureOffchainReporting enables the Flux Monitor job type.
 func (c Config) FeatureOffchainReporting() bool {
 	return c.viper.GetBool(EnvVarName("FeatureOffchainReporting"))

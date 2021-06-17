@@ -66,7 +66,7 @@ func TestJobsController_Create_ValidationFailure_OffchainReportingSpec(t *testin
 
 			var address ethkey.EIP55Address
 			if tc.taExists {
-				key := cltest.MustInsertRandomKey(t, ta.Store.DB)
+				key, _ := cltest.MustInsertRandomKey(t, ta.Store.DB, ta.KeyStore.Eth())
 				address = key.Address
 			} else {
 				address = cltest.NewEIP55Address()
@@ -369,7 +369,6 @@ func setupJobsControllerTests(t *testing.T) (*cltest.TestApplication, cltest.HTT
 	require.NoError(t, app.Store.DB.Create(bridge2).Error)
 	client := app.NewHTTPClient()
 	vrfKeyStore := app.GetKeyStore().VRF()
-	vrfKeyStore.Unlock(cltest.Password)
 	_, err := vrfKeyStore.CreateKey()
 	require.NoError(t, err)
 	return app, client

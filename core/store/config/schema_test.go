@@ -76,6 +76,7 @@ func TestConfigSchema(t *testing.T) {
 		"FeatureExternalInitiators":                  "FEATURE_EXTERNAL_INITIATORS",
 		"FeatureFluxMonitor":                         "FEATURE_FLUX_MONITOR",
 		"FeatureFluxMonitorV2":                       "FEATURE_FLUX_MONITOR_V2",
+		"FeatureFastKeyStore":                        "FEATURE_FAST_KEY_STORE",
 		"FeatureOffchainReporting":                   "FEATURE_OFFCHAIN_REPORTING",
 		"FeatureWebhookV2":                           "FEATURE_WEBHOOK_V2",
 		"FlagsContractAddress":                       "FLAGS_CONTRACT_ADDRESS",

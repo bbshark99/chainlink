@@ -23,9 +23,9 @@ func Test_EthResender_FindEthTxesRequiringResend(t *testing.T) {
 	store, cleanup := cltest.NewStore(t)
 	defer cleanup()
 	db := store.DB
+	ethKeyStore := cltest.NewKeyStore(t, db).Eth()
 
-	key := cltest.MustInsertRandomKey(t, store.DB)
-	fromAddress := key.Address.Address()
+	_, fromAddress := cltest.MustInsertRandomKey(t, db, ethKeyStore)
 
 	t.Run("returns nothing if there are no transactions", func(t *testing.T) {
 		olderThan := time.Now()
@@ -71,12 +71,12 @@ func Test_EthResender_Start(t *testing.T) {
 	store, cleanup := cltest.NewStore(t)
 	t.Cleanup(cleanup)
 	db := store.DB
+	ethKeyStore := cltest.NewKeyStore(t, db).Eth()
 	// This can be anything as long as it isn't zero
 	store.Config.Set("ETH_TX_RESEND_AFTER_THRESHOLD", "42h")
 	// Set batch size low to test batching
 	store.Config.Set("ETH_RPC_DEFAULT_BATCH_SIZE", "1")
-	key := cltest.MustInsertRandomKey(t, store.DB)
-	fromAddress := key.Address.Address()
+	_, fromAddress := cltest.MustInsertRandomKey(t, db, ethKeyStore)
 
 	t.Run("resends transactions that have been languishing unconfirmed for too long", func(t *testing.T) {
 		ethClient := new(mocks.Client)

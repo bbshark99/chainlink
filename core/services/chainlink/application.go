@@ -69,7 +69,7 @@ type Application interface {
 	GetStore() *strpkg.Store
 	GetEthClient() eth.Client
 	GetConfig() *config.Config
-	GetKeyStore() *keystore.Master
+	GetKeyStore() keystore.Master
 	GetStatsPusher() synchronization.StatsPusher
 	GetHeadBroadcaster() httypes.HeadBroadcasterRegistry
 	WakeSessionReaper()
@@ -126,7 +126,7 @@ type ChainlinkApplication struct {
 	ethClient                eth.Client
 	Store                    *strpkg.Store
 	Config                   *config.Config
-	KeyStore                 *keystore.Master
+	KeyStore                 keystore.Master
 	ExternalInitiatorManager webhook.ExternalInitiatorManager
 	SessionReaper            utils.SleeperTask
 	shutdownOnce             sync.Once
@@ -623,7 +623,7 @@ func (app *ChainlinkApplication) GetConfig() *config.Config {
 	return app.Config
 }
 
-func (app *ChainlinkApplication) GetKeyStore() *keystore.Master {
+func (app *ChainlinkApplication) GetKeyStore() keystore.Master {
 	return app.KeyStore
 }
 

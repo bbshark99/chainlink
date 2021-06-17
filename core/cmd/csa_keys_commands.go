@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/smartcontractkit/chainlink/core/web/presenters"
 	"github.com/urfave/cli"
 	"go.uber.org/multierr"
@@ -30,8 +28,6 @@ func (p *CSAKeyPresenter) ToRow() []string {
 	row := []string{
 		p.ID,
 		p.PubKey,
-		fmt.Sprintf("%v", p.CreatedAt),
-		fmt.Sprintf("%v", p.UpdatedAt),
 	}
 
 	return row

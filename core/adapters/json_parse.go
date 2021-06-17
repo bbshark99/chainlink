@@ -38,7 +38,7 @@ func (jpa *JSONParse) TaskType() models.TaskType {
 //   }
 //
 // Then ["0","last"] would be the path, and "1111" would be the returned value
-func (jpa *JSONParse) Perform(input models.RunInput, _ *store.Store, _ *keystore.Master) models.RunOutput {
+func (jpa *JSONParse) Perform(input models.RunInput, _ *store.Store, _ keystore.Master) models.RunOutput {
 	var val string
 	var err error
 

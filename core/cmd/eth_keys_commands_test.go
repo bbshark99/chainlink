@@ -39,7 +39,6 @@ func TestEthKeysPresenter_RenderTable(t *testing.T) {
 		isFunding   = true
 		createdAt   = time.Now()
 		updatedAt   = time.Now().Add(time.Second)
-		deletedAt   = time.Now().Add(2 * time.Second)
 		bundleID    = "7f993fb701b3410b1f6e8d4d93a7462754d24609b9b31a4fe64a0cb475a4d934"
 		buffer      = bytes.NewBufferString("")
 		r           = cmd.RendererTable{Writer: buffer}
@@ -55,7 +54,6 @@ func TestEthKeysPresenter_RenderTable(t *testing.T) {
 			IsFunding:   isFunding,
 			CreatedAt:   createdAt,
 			UpdatedAt:   updatedAt,
-			DeletedAt:   &deletedAt,
 		},
 	}
 
@@ -70,7 +68,6 @@ func TestEthKeysPresenter_RenderTable(t *testing.T) {
 	assert.Contains(t, output, strconv.FormatBool(isFunding))
 	assert.Contains(t, output, createdAt.String())
 	assert.Contains(t, output, updatedAt.String())
-	assert.Contains(t, output, deletedAt.String())
 
 	// Render many resources
 	buffer.Reset()
@@ -85,7 +82,6 @@ func TestEthKeysPresenter_RenderTable(t *testing.T) {
 	assert.Contains(t, output, strconv.FormatBool(isFunding))
 	assert.Contains(t, output, createdAt.String())
 	assert.Contains(t, output, updatedAt.String())
-	assert.Contains(t, output, deletedAt.String())
 }
 
 func TestClient_ListETHKeys(t *testing.T) {
@@ -182,7 +178,6 @@ func TestClient_ImportExportETHKey(t *testing.T) {
 	err := client.RemoteLogin(c)
 	assert.NoError(t, err)
 
-	err = app.GetKeyStore().Eth().Unlock(cltest.Password)
 	assert.NoError(t, err)
 
 	err = client.ListETHKeys(c)
@@ -237,11 +232,10 @@ func TestClient_ImportExportETHKey(t *testing.T) {
 	err = os.MkdirAll(keystoreDir, 0700|os.ModeDir)
 	assert.NoError(t, err)
 
-	scryptParams := utils.GetScryptParams(app.Store.Config)
-	keystore := keystore.New(app.Store.DB, scryptParams).Eth()
+	keystore := keystore.New(app.Store.DB, utils.FastScryptParams)
 	err = keystore.Unlock(string(oldpassword))
 	assert.NoError(t, err)
-	key, err := keystore.ImportKey(keyJSON, strings.TrimSpace(string(newpassword)))
+	key, err := keystore.Eth().ImportKey(keyJSON, strings.TrimSpace(string(newpassword)))
 	assert.NoError(t, err)
 	assert.Equal(t, addr.Hex(), key.Address.Hex())
 

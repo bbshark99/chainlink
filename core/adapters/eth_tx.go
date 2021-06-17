@@ -59,7 +59,7 @@ func (e *EthTx) TaskType() models.TaskType {
 // Perform creates the run result for the transaction if the existing run result
 // is not currently pending. Then it confirms the transaction was confirmed on
 // the blockchain.
-func (e *EthTx) Perform(input models.RunInput, store *strpkg.Store, keyStore *keystore.Master) models.RunOutput {
+func (e *EthTx) Perform(input models.RunInput, store *strpkg.Store, keyStore keystore.Master) models.RunOutput {
 	jr := input.JobRun()
 	trtx, err := store.FindEthTaskRunTxByTaskRunID(input.TaskRunID())
 	if err != nil {
@@ -100,7 +100,7 @@ func (e *EthTx) checkForConfirmation(trtx bulletprooftxmanager.EthTaskRunTx,
 	}
 }
 
-func (e *EthTx) pickFromAddress(input models.RunInput, keyStore *keystore.Master) (common.Address, error) {
+func (e *EthTx) pickFromAddress(input models.RunInput, keyStore keystore.Master) (common.Address, error) {
 	if len(e.FromAddresses) > 0 {
 		if e.FromAddress != utils.ZeroAddress {
 			logger.Warnf("task spec for task run %s specified both fromAddress and fromAddresses."+
@@ -125,7 +125,7 @@ func (e *EthTx) insertEthTx(
 	m models.EthTxMeta,
 	input models.RunInput,
 	store *strpkg.Store,
-	keyStore *keystore.Master,
+	keyStore keystore.Master,
 ) models.RunOutput {
 	var (
 		txData, encodedPayload []byte

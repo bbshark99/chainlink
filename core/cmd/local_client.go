@@ -82,31 +82,38 @@ func (cli *Client) RunNode(c *clipkg.Context) error {
 	if e := checkFilePermissions(cli.Config.RootDir()); e != nil {
 		logger.Warn(e)
 	}
-	// TODO - RYAN - authenticating the keystore should be done in one step here! with ONE password file
-	// https://app.clubhouse.io/chainlinklabs/story/7735/combine-keystores
-	keyStorePwd, err := cli.KeyStoreAuthenticator.AuthenticateEthKey(keyStore.Eth(), pwd)
-	if err != nil {
-		return cli.errorOut(fmt.Errorf("error authenticating keystore: %+v", err))
-	}
 
-	if authErr := cli.KeyStoreAuthenticator.AuthenticateOCRKey(keyStore.OCR(), store.Config, keyStorePwd); authErr != nil {
-		return cli.errorOut(errors.Wrapf(authErr, "while authenticating with OCR password"))
-	}
+	// TODO - RYAN - prompt for password here
+	var keyStorePwd string
 
-	if authErr := cli.KeyStoreAuthenticator.AuthenticateCSAKey(keyStore.CSA(), keyStorePwd); authErr != nil {
-		return cli.errorOut(errors.Wrapf(authErr, "while authenticating CSA keystore"))
-	}
-
-	if len(c.String("vrfpassword")) != 0 {
-		vrfpwd, fileErr := passwordFromFile(c.String("vrfpassword"))
-		if fileErr != nil {
-			return cli.errorOut(errors.Wrapf(fileErr,
-				"error reading VRF password from vrfpassword file \"%s\"",
-				c.String("vrfpassword")))
+	if cli.Config.FeatureFastKeyStore() {
+		err := keyStore.Unlock(pwd)
+		if err != nil {
+			return cli.errorOut(fmt.Errorf("error authenticating keystore: %+v", err))
 		}
-		if authErr := cli.KeyStoreAuthenticator.AuthenticateVRFKey(keyStore.VRF(), vrfpwd); authErr != nil {
-			return cli.errorOut(errors.Wrapf(authErr, "while authenticating with VRF password"))
-		}
+	} else {
+		// TODO - Remove after keystore V1 is removed
+
+		// keyStorePwd, err := cli.KeyStoreAuthenticator.AuthenticateEthKey(keyStore.Eth(), pwd)
+		// if err != nil {
+		// 	return cli.errorOut(fmt.Errorf("error authenticating keystore: %+v", err))
+		// }
+
+		// if authErr := cli.KeyStoreAuthenticator.AuthenticateOCRKey(keyStore.OCR(), store.Config, keyStorePwd); authErr != nil {
+		// 	return cli.errorOut(errors.Wrapf(authErr, "while authenticating with OCR password"))
+		// }
+
+		// if len(c.String("vrfpassword")) != 0 {
+		// 	vrfpwd, fileErr := passwordFromFile(c.String("vrfpassword"))
+		// 	if fileErr != nil {
+		// 		return cli.errorOut(errors.Wrapf(fileErr,
+		// 			"error reading VRF password from vrfpassword file \"%s\"",
+		// 			c.String("vrfpassword")))
+		// 	}
+		// 	if authErr := cli.KeyStoreAuthenticator.AuthenticateVRFKey(keyStore.VRF(), vrfpwd); authErr != nil {
+		// 		return cli.errorOut(errors.Wrapf(authErr, "while authenticating with VRF password"))
+		// 	}
+		// }
 	}
 
 	var user models.User
@@ -237,9 +244,9 @@ func logConfigVariables(store *strpkg.Store) error {
 
 func setupFundingKey(ctx context.Context,
 	etClient eth.Client,
-	ethKeyStore *keystore.Eth,
+	ethKeyStore keystore.Eth,
 	pwd string,
-) (key ethkey.Key, balance *big.Int, err error) {
+) (key ethkey.KeyV2, balance *big.Int, err error) {
 	key, existed, err := ethKeyStore.EnsureFundingKey()
 	if err != nil {
 		return key, nil, err
@@ -279,6 +286,10 @@ func (cli *Client) RebroadcastTransactions(c *clipkg.Context) (err error) {
 			err = multierr.Append(err, serr)
 		}
 	}()
+	pwd, err := passwordFromFile(c.String("password"))
+	if err != nil {
+		return cli.errorOut(fmt.Errorf("error reading password: %+v", err))
+	}
 	store := app.GetStore()
 	keyStore := app.GetKeyStore()
 
@@ -288,13 +299,9 @@ func (cli *Client) RebroadcastTransactions(c *clipkg.Context) (err error) {
 		return err
 	}
 
-	pwd, err := passwordFromFile(c.String("password"))
+	err = keyStore.Unlock(pwd)
 	if err != nil {
-		return cli.errorOut(fmt.Errorf("error reading password: %+v", err))
-	}
-	_, err = cli.KeyStoreAuthenticator.AuthenticateEthKey(keyStore.Eth(), pwd)
-	if err != nil {
-		return cli.errorOut(fmt.Errorf("error authenticating keystore: %+v", err))
+		return cli.errorOut(errors.Wrap(err, "error authenticating keystore"))
 	}
 
 	err = store.Start()
@@ -607,7 +614,7 @@ func (cli *Client) SetNextNonce(c *clipkg.Context) error {
 		return cli.errorOut(errors.Wrap(err, "could not decode address"))
 	}
 
-	res := db.Exec(`UPDATE keys SET next_nonce = ? WHERE address = ?`, nextNonce, address)
+	res := db.Exec(`UPDATE eth_key_states SET next_nonce = ? WHERE address = ?`, nextNonce, address)
 	if res.Error != nil {
 		return cli.errorOut(err)
 	}

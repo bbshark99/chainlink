@@ -57,10 +57,12 @@ type ConfigReader interface {
 	ExplorerURL() *url.URL
 	FeatureExternalInitiators() bool
 	FeatureFluxMonitor() bool
+	FeatureFastKeyStore() bool
 	FeatureOffchainReporting() bool
 	BlockHistoryEstimatorBlockDelay() uint16
 	BlockHistoryEstimatorBlockHistorySize() uint16
 	BlockHistoryEstimatorTransactionPercentile() uint16
+	InsecureFastScrypt() bool
 	InsecureSkipVerify() bool
 	JSONConsole() bool
 	KeeperDefaultTransactionQueueDepth() uint32

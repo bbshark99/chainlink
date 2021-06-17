@@ -161,6 +161,7 @@ func TestORM_CreateEthTransaction(t *testing.T) {
 
 	corestore, cleanup := cltest.NewStore(t)
 	t.Cleanup(cleanup)
+	ethKeyStore := cltest.NewKeyStore(t, corestore.DB).Eth()
 
 	strategy := new(bptxmmocks.TxStrategy)
 
@@ -168,8 +169,7 @@ func TestORM_CreateEthTransaction(t *testing.T) {
 		txm = new(bptxmmocks.TxManager)
 		orm = fluxmonitorv2.NewORM(corestore.DB, txm, strategy)
 
-		key      = cltest.MustInsertRandomKey(t, corestore.DB, 0)
-		from     = key.Address.Address()
+		_, from  = cltest.MustInsertRandomKey(t, corestore.DB, ethKeyStore, 0)
 		to       = cltest.NewAddress()
 		payload  = []byte{1, 0, 0}
 		gasLimit = uint64(21000)

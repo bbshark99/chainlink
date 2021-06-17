@@ -33,6 +33,7 @@ func TestORM(t *testing.T) {
 	config, oldORM, cleanupDB := heavyweight.FullTestORM(t, "services_job_orm", true, true)
 	defer cleanupDB()
 	db := oldORM.DB
+	ethKeyStore := cltest.NewKeyStore(t, db).Eth()
 
 	pipelineORM, eventBroadcaster, cleanupORM := cltest.NewPipelineORM(t, config, db)
 	defer cleanupORM()
@@ -44,8 +45,7 @@ func TestORM(t *testing.T) {
 	require.NoError(t, db.Create(bridge).Error)
 	_, bridge2 := cltest.NewBridgeType(t, "election_winner", "http://blah.com")
 	require.NoError(t, db.Create(bridge2).Error)
-	key := cltest.MustInsertRandomKey(t, db)
-	address := key.Address.Address()
+	_, address := cltest.MustInsertRandomKey(t, db, ethKeyStore)
 	dbSpec := makeOCRJobSpec(t, address)
 
 	t.Run("it creates job specs", func(t *testing.T) {
@@ -231,9 +231,9 @@ func TestORM_CheckForDeletedJobs(t *testing.T) {
 	store, cleanup := cltest.NewStoreWithConfig(t, config)
 	defer cleanup()
 	db := store.DB
+	ethKeyStore := cltest.NewKeyStore(t, db).Eth()
 
-	key := cltest.MustInsertRandomKey(t, db)
-	address := key.Address.Address()
+	_, address := cltest.MustInsertRandomKey(t, db, ethKeyStore)
 
 	_, bridge := cltest.NewBridgeType(t, "voter_turnout", "http://blah.com")
 	require.NoError(t, db.Create(bridge).Error)
@@ -274,9 +274,9 @@ func TestORM_UnclaimJob(t *testing.T) {
 	store, cleanup := cltest.NewStoreWithConfig(t, config)
 	defer cleanup()
 	db := store.DB
+	ethKeyStore := cltest.NewKeyStore(t, db).Eth()
 
-	key := cltest.MustInsertRandomKey(t, db)
-	address := key.Address.Address()
+	_, address := cltest.MustInsertRandomKey(t, db, ethKeyStore)
 
 	pipelineORM, eventBroadcaster, cleanupORM := cltest.NewPipelineORM(t, config, db)
 	defer cleanupORM()
@@ -316,7 +316,6 @@ func TestORM_DeleteJob_DeletesAssociatedRecords(t *testing.T) {
 	defer cleanup()
 	db := store.DB
 	keyStore := cltest.NewKeyStore(t, store.DB)
-	keyStore.VRF().Unlock("blah")
 
 	pipelineORM, eventBroadcaster, cleanupORM := cltest.NewPipelineORM(t, config, db)
 	defer cleanupORM()
@@ -329,8 +328,7 @@ func TestORM_DeleteJob_DeletesAssociatedRecords(t *testing.T) {
 		_, bridge2 := cltest.NewBridgeType(t, "election_winner", "http://blah.com")
 		require.NoError(t, db.Create(bridge2).Error)
 
-		key := cltest.MustInsertRandomKey(t, store.DB)
-		address := key.Address.Address()
+		_, address := cltest.MustInsertRandomKey(t, db, keyStore.Eth())
 		jb, err := offchainreporting.ValidatedOracleSpecToml(config.Config, testspecs.GenerateOCRSpec(testspecs.OCRSpecParams{TransmitterAddress: address.Hex()}).Toml())
 		require.NoError(t, err)
 

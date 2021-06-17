@@ -47,7 +47,7 @@ func (q *Quotient) UnmarshalJSON(buf []byte) error {
 //
 // For example, if input value is "2.5", and the adapter's "dividend" value
 // is "1", the result's value will be "0.4".
-func (q *Quotient) Perform(input models.RunInput, _ *store.Store, _ *keystore.Master) models.RunOutput {
+func (q *Quotient) Perform(input models.RunInput, _ *store.Store, _ keystore.Master) models.RunOutput {
 	val := input.Result()
 	i, ok := (&big.Float{}).SetString(val.String())
 	if !ok {

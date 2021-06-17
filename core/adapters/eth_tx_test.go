@@ -27,7 +27,7 @@ func TestEthTxAdapter_Perform_BPTXM(t *testing.T) {
 	db := store.DB
 	orm := headtracker.NewORM(store.DB)
 	keyStore := cltest.NewKeyStore(t, store.DB)
-	_, fromAddress := cltest.MustAddRandomKeyToKeystore(t, keyStore.Eth(), 0)
+	_, fromAddress := cltest.MustInsertRandomKey(t, db, keyStore.Eth(), 0)
 
 	toAddress := cltest.NewAddress()
 	gasLimit := uint64(42)

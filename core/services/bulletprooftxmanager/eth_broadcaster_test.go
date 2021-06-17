@@ -36,8 +36,7 @@ import (
 func TestEthBroadcaster_ProcessUnstartedEthTxs_Success(t *testing.T) {
 	db := pgtest.NewGormDB(t)
 	ethKeyStore := cltest.NewKeyStore(t, db).Eth()
-	key, fromAddress := cltest.MustAddRandomKeyToKeystore(t, ethKeyStore, 0)
-	ethKeyStore.Unlock(cltest.Password)
+	key, fromAddress := cltest.MustInsertRandomKey(t, db, ethKeyStore, 0)
 
 	config, cleanup := cltest.NewConfig(t)
 	defer cleanup()
@@ -241,8 +240,7 @@ func TestEthBroadcaster_ProcessUnstartedEthTxs_OptimisticLockingOnEthTx(t *testi
 	db := orm.DB
 	ethClient := new(mocks.Client)
 	ethKeyStore := cltest.NewKeyStore(t, db).Eth()
-	key, fromAddress := cltest.MustAddRandomKeyToKeystore(t, ethKeyStore, 0)
-	ethKeyStore.Unlock(cltest.Password)
+	key, fromAddress := cltest.MustInsertRandomKey(t, db, ethKeyStore, 0)
 
 	chStartEstimate := make(chan struct{})
 	chBlock := make(chan struct{})
@@ -260,7 +258,7 @@ func TestEthBroadcaster_ProcessUnstartedEthTxs_OptimisticLockingOnEthTx(t *testi
 		ethKeyStore,
 		&postgres.NullAdvisoryLocker{},
 		&postgres.NullEventBroadcaster{},
-		[]ethkey.Key{key},
+		[]ethkey.KeyV2{key},
 		estimator,
 	)
 
@@ -298,8 +296,7 @@ func TestEthBroadcaster_ProcessUnstartedEthTxs_Success_WithMultiplier(t *testing
 	db := pgtest.NewGormDB(t)
 
 	ethKeyStore := cltest.NewKeyStore(t, db).Eth()
-	key, fromAddress := cltest.MustAddRandomKeyToKeystore(t, ethKeyStore, 0)
-	ethKeyStore.Unlock(cltest.Password)
+	key, fromAddress := cltest.MustInsertRandomKey(t, db, ethKeyStore, 0)
 
 	config, cleanup := cltest.NewConfig(t)
 	defer cleanup()
@@ -336,9 +333,9 @@ func TestEthBroadcaster_AssignsNonceOnStart(t *testing.T) {
 	db := pgtest.NewGormDB(t)
 
 	ethKeyStore := cltest.NewKeyStore(t, db).Eth()
-	k1, fromAddress := cltest.MustAddRandomKeyToKeystore(t, ethKeyStore, true)
-	k2, dummyAddress := cltest.MustAddRandomKeyToKeystore(t, ethKeyStore, false)
-	keys := []ethkey.Key{k1, k2}
+	k1, fromAddress := cltest.MustInsertRandomKey(t, db, ethKeyStore, true)
+	k2, dummyAddress := cltest.MustInsertRandomKey(t, db, ethKeyStore, false)
+	keys := []ethkey.KeyV2{k1, k2}
 
 	config, cleanup := cltest.NewConfig(t)
 	defer cleanup()
@@ -396,18 +393,18 @@ func TestEthBroadcaster_AssignsNonceOnStart(t *testing.T) {
 		defer eb.Close()
 
 		// Check key to make sure it has correct nonce assigned
-		var keys []ethkey.Key
-		err := db.Order("created_at asc").Find(&keys).Error
+		var states []ethkey.State
+		err := db.Order("created_at asc").Find(&states).Error
 		require.NoError(t, err)
-		key := keys[0]
+		state := states[0]
 
-		assert.NotNil(t, key.NextNonce)
-		assert.Equal(t, int64(ethNodeNonce), key.NextNonce)
+		assert.NotNil(t, state.NextNonce)
+		assert.Equal(t, int64(ethNodeNonce), state.NextNonce)
 
 		// The dummy key did not get updated
-		key2 := keys[1]
-		assert.Equal(t, dummyAddress.Hex(), key2.Address.Hex())
-		assert.Equal(t, 0, int(key2.NextNonce))
+		state2 := states[1]
+		assert.Equal(t, dummyAddress.Hex(), state2.Address.Hex())
+		assert.Equal(t, 0, int(state2.NextNonce))
 
 		ethClient.AssertExpectations(t)
 	})
@@ -426,7 +423,7 @@ func TestEthBroadcaster_ProcessUnstartedEthTxs_ResumingFromCrash(t *testing.T) {
 		db := pgtest.NewGormDB(t)
 
 		ethKeyStore := cltest.NewKeyStore(t, db).Eth()
-		_, fromAddress := cltest.MustAddRandomKeyToKeystore(t, ethKeyStore, nextNonce)
+		_, fromAddress := cltest.MustInsertRandomKey(t, db, ethKeyStore, nextNonce)
 
 		firstInProgress := bulletprooftxmanager.EthTx{
 			FromAddress:    fromAddress,
@@ -462,7 +459,7 @@ func TestEthBroadcaster_ProcessUnstartedEthTxs_ResumingFromCrash(t *testing.T) {
 		db := pgtest.NewGormDB(t)
 
 		ethKeyStore := cltest.NewKeyStore(t, db).Eth()
-		key, fromAddress := cltest.MustAddRandomKeyToKeystore(t, ethKeyStore, nextNonce)
+		key, fromAddress := cltest.MustInsertRandomKey(t, db, ethKeyStore, nextNonce)
 
 		config, cleanup := cltest.NewConfig(t)
 		defer cleanup()
@@ -500,8 +497,7 @@ func TestEthBroadcaster_ProcessUnstartedEthTxs_ResumingFromCrash(t *testing.T) {
 		db := pgtest.NewGormDB(t)
 
 		ethKeyStore := cltest.NewKeyStore(t, db).Eth()
-		key, fromAddress := cltest.MustAddRandomKeyToKeystore(t, ethKeyStore, nextNonce)
-		ethKeyStore.Unlock(cltest.Password)
+		key, fromAddress := cltest.MustInsertRandomKey(t, db, ethKeyStore, nextNonce)
 
 		config, cleanup := cltest.NewConfig(t)
 		defer cleanup()
@@ -539,7 +535,7 @@ func TestEthBroadcaster_ProcessUnstartedEthTxs_ResumingFromCrash(t *testing.T) {
 		db := pgtest.NewGormDB(t)
 
 		ethKeyStore := cltest.NewKeyStore(t, db).Eth()
-		key, fromAddress := cltest.MustAddRandomKeyToKeystore(t, ethKeyStore, nextNonce)
+		key, fromAddress := cltest.MustInsertRandomKey(t, db, ethKeyStore, nextNonce)
 
 		config, cleanup := cltest.NewConfig(t)
 		defer cleanup()
@@ -576,8 +572,7 @@ func TestEthBroadcaster_ProcessUnstartedEthTxs_ResumingFromCrash(t *testing.T) {
 		db := pgtest.NewGormDB(t)
 
 		ethKeyStore := cltest.NewKeyStore(t, db).Eth()
-		key, fromAddress := cltest.MustAddRandomKeyToKeystore(t, ethKeyStore, nextNonce)
-		ethKeyStore.Unlock(cltest.Password)
+		key, fromAddress := cltest.MustInsertRandomKey(t, db, ethKeyStore, nextNonce)
 
 		config, cleanup := cltest.NewConfig(t)
 		defer cleanup()
@@ -614,10 +609,8 @@ func TestEthBroadcaster_ProcessUnstartedEthTxs_ResumingFromCrash(t *testing.T) {
 	t.Run("previous run assigned nonce and then failed to reach node for some reason and node is still down", func(t *testing.T) {
 		failedToReachNodeError := context.DeadlineExceeded
 		db := pgtest.NewGormDB(t)
-
 		ethKeyStore := cltest.NewKeyStore(t, db).Eth()
-		key, fromAddress := cltest.MustAddRandomKeyToKeystore(t, ethKeyStore, nextNonce)
-		ethKeyStore.Unlock(cltest.Password)
+		key, fromAddress := cltest.MustInsertRandomKey(t, db, ethKeyStore, nextNonce)
 
 		config, cleanup := cltest.NewConfig(t)
 		defer cleanup()
@@ -655,10 +648,8 @@ func TestEthBroadcaster_ProcessUnstartedEthTxs_ResumingFromCrash(t *testing.T) {
 
 	t.Run("previous run assigned nonce and broadcast transaction then crashed and rebooted with a different configured gas price", func(t *testing.T) {
 		db := pgtest.NewGormDB(t)
-
 		ethKeyStore := cltest.NewKeyStore(t, db).Eth()
-		key, fromAddress := cltest.MustAddRandomKeyToKeystore(t, ethKeyStore, nextNonce)
-		ethKeyStore.Unlock(cltest.Password)
+		key, fromAddress := cltest.MustInsertRandomKey(t, db, ethKeyStore, nextNonce)
 
 		config, cleanup := cltest.NewConfig(t)
 		defer cleanup()
@@ -725,10 +716,8 @@ func TestEthBroadcaster_ProcessUnstartedEthTxs_Errors(t *testing.T) {
 	store, cleanup := cltest.NewStore(t)
 	defer cleanup()
 	db := store.DB
-
 	ethKeyStore := cltest.NewKeyStore(t, db).Eth()
-	key, fromAddress := cltest.MustAddRandomKeyToKeystore(t, ethKeyStore, 0)
-	ethKeyStore.Unlock(cltest.Password)
+	key, fromAddress := cltest.MustInsertRandomKey(t, db, ethKeyStore, 0)
 
 	config, cleanup := cltest.NewConfig(t)
 	defer cleanup()
@@ -816,11 +805,12 @@ func TestEthBroadcaster_ProcessUnstartedEthTxs_Errors(t *testing.T) {
 		assert.Len(t, etx.EthTxAttempts, 0)
 
 		// Check that the key had its nonce reset
-		require.NoError(t, db.First(&key).Error)
+		var state ethkey.State
+		require.NoError(t, db.First(&state).Error)
 		// Saved NextNonce must be the same as before because this transaction
 		// was not accepted by the eth node and never can be
-		require.NotNil(t, key.NextNonce)
-		require.Equal(t, int64(localNextNonce), key.NextNonce)
+		require.NotNil(t, state.NextNonce)
+		require.Equal(t, int64(localNextNonce), state.NextNonce)
 
 		ethClient.AssertExpectations(t)
 	})
@@ -856,11 +846,12 @@ func TestEthBroadcaster_ProcessUnstartedEthTxs_Errors(t *testing.T) {
 		assert.Len(t, etx.EthTxAttempts, 0)
 
 		// Check that the key had its nonce reset
-		require.NoError(t, db.First(&key).Error)
+		var state ethkey.State
+		require.NoError(t, db.First(&state).Error)
 		// Saved NextNonce must be the same as before because this transaction
 		// was not accepted by the eth node and never can be
-		require.NotNil(t, key.NextNonce)
-		require.Equal(t, int64(localNextNonce), key.NextNonce)
+		require.NotNil(t, state.NextNonce)
+		require.Equal(t, int64(localNextNonce), state.NextNonce)
 
 		ethClient.AssertExpectations(t)
 	})
@@ -1123,13 +1114,13 @@ func TestEthBroadcaster_ProcessUnstartedEthTxs_KeystoreErrors(t *testing.T) {
 
 	db := pgtest.NewGormDB(t)
 
-	kst := new(ksmocks.EthKeyStoreInterface)
-
-	key := cltest.MustInsertRandomKey(t, db, 0)
-	fromAddress := key.Address.Address()
+	kst := new(ksmocks.Eth)
 
 	config, cleanup := cltest.NewConfig(t)
 	defer cleanup()
+	keystore := cltest.NewKeyStore(t, db)
+
+	key, fromAddress := cltest.MustInsertRandomKey(t, db, keystore.Eth(), 0)
 
 	ethClient := new(mocks.Client)
 
@@ -1154,6 +1145,7 @@ func TestEthBroadcaster_ProcessUnstartedEthTxs_KeystoreErrors(t *testing.T) {
 			mock.MatchedBy(func(chainID *big.Int) bool {
 				return chainID.Cmp(config.ChainID()) == 0
 			})).Return(&tx, errors.New("could not sign transaction")).Once()
+		kst.On("GetStateForKey", mock.Anything).Return(ethkey.State{ID: 1}, nil).Once()
 
 		// Do the thing
 		err := eb.ProcessUnstartedEthTxs(key)
@@ -1168,10 +1160,10 @@ func TestEthBroadcaster_ProcessUnstartedEthTxs_KeystoreErrors(t *testing.T) {
 		assert.Len(t, etx.EthTxAttempts, 0)
 
 		// Check that the key did not have its nonce incremented
-		var key ethkey.Key
-		require.NoError(t, db.First(&key).Error)
-		require.NotNil(t, key.NextNonce)
-		require.Equal(t, int64(localNonce), key.NextNonce)
+		var keyState ethkey.State
+		require.NoError(t, db.First(&keyState).Error)
+		require.NotNil(t, keyState.NextNonce)
+		require.Equal(t, int64(localNonce), keyState.NextNonce)
 
 		kst.AssertExpectations(t)
 	})
@@ -1185,15 +1177,17 @@ func TestEthBroadcaster_ProcessUnstartedEthTxs_Locking(t *testing.T) {
 	db := pgtest.NewGormDB(t)
 
 	ethKeyStore := cltest.NewKeyStore(t, db).Eth()
-	key, _ := cltest.MustAddRandomKeyToKeystore(t, ethKeyStore, 0)
+	key, _ := cltest.MustInsertRandomKey(t, db, ethKeyStore, 0)
+	keyState, err := ethKeyStore.GetStateForKey(key)
+	require.NoError(t, err)
 	ethClient := new(mocks.Client)
 
-	advisoryLocker1.On("WithAdvisoryLock", mock.Anything, mock.AnythingOfType("int32"), key.ID, mock.AnythingOfType("func() error")).Return(nil)
+	advisoryLocker1.On("WithAdvisoryLock", mock.Anything, mock.AnythingOfType("int32"), keyState.ID, mock.AnythingOfType("func() error")).Return(nil)
 
 	config, cleanup := cltest.NewConfig(t)
 	defer cleanup()
 
-	eb := bulletprooftxmanager.NewEthBroadcaster(db, ethClient, config, ethKeyStore, advisoryLocker1, &postgres.NullEventBroadcaster{}, []ethkey.Key{key}, nil)
+	eb := bulletprooftxmanager.NewEthBroadcaster(db, ethClient, config, ethKeyStore, advisoryLocker1, &postgres.NullEventBroadcaster{}, []ethkey.KeyV2{key}, nil)
 
 	require.NoError(t, eb.ProcessUnstartedEthTxs(key))
 
@@ -1207,7 +1201,7 @@ func TestEthBroadcaster_GetNextNonce(t *testing.T) {
 	db := pgtest.NewGormDB(t)
 
 	ethKeyStore := cltest.NewKeyStore(t, db).Eth()
-	key, _ := cltest.MustAddRandomKeyToKeystore(t, ethKeyStore, 0)
+	key, _ := cltest.MustInsertRandomKey(t, db, ethKeyStore, 0)
 
 	nonce, err := bulletprooftxmanager.GetNextNonce(db, key.Address.Address())
 	assert.NoError(t, err)
@@ -1219,7 +1213,7 @@ func TestEthBroadcaster_IncrementNextNonce(t *testing.T) {
 	db := pgtest.NewGormDB(t)
 
 	ethKeyStore := cltest.NewKeyStore(t, db).Eth()
-	key, _ := cltest.MustAddRandomKeyToKeystore(t, ethKeyStore, 0)
+	key, _ := cltest.MustInsertRandomKey(t, db, ethKeyStore, 0)
 
 	// Cannot increment if supplied nonce doesn't match existing
 	require.Error(t, bulletprooftxmanager.IncrementNextNonce(db, key.Address.Address(), int64(42)))
@@ -1227,9 +1221,10 @@ func TestEthBroadcaster_IncrementNextNonce(t *testing.T) {
 	require.NoError(t, bulletprooftxmanager.IncrementNextNonce(db, key.Address.Address(), int64(0)))
 
 	// Nonce bumped to 1
-	require.NoError(t, db.First(&key).Error)
-	require.NotNil(t, key.NextNonce)
-	require.Equal(t, int64(1), key.NextNonce)
+	var keyState ethkey.State
+	require.NoError(t, db.First(&keyState).Error)
+	require.NotNil(t, keyState.NextNonce)
+	require.Equal(t, int64(1), keyState.NextNonce)
 }
 
 func TestEthBroadcaster_Trigger(t *testing.T) {
@@ -1256,7 +1251,7 @@ func TestEthBroadcaster_EthTxInsertEventCausesTriggerToFire(t *testing.T) {
 	db := orm.DB
 
 	ethKeyStore := cltest.NewKeyStore(t, db).Eth()
-	_, fromAddress := cltest.MustAddRandomKeyToKeystore(t, ethKeyStore, 0)
+	_, fromAddress := cltest.MustInsertRandomKey(t, db, ethKeyStore, 0)
 	eventBroadcaster := postgres.NewEventBroadcaster(config.DatabaseURL(), 0, 0)
 	eventBroadcaster.Start()
 	defer eventBroadcaster.Close()

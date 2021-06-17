@@ -15,7 +15,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind/backends"
-	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -72,7 +71,7 @@ func newIdentity(t *testing.T) *bind.TransactOpts {
 	return cltest.MustNewSimulatedBackendKeyedTransactor(t, key)
 }
 
-func newVRFCoordinatorUniverseWithV08Consumer(t *testing.T, key ethkey.Key) coordinatorUniverse {
+func newVRFCoordinatorUniverseWithV08Consumer(t *testing.T, key ethkey.KeyV2) coordinatorUniverse {
 	cu := newVRFCoordinatorUniverse(t, key)
 	consumerContractAddress, _, consumerContract, err :=
 		solidity_vrf_consumer_interface_v08.DeployVRFConsumer(
@@ -92,10 +91,8 @@ func newVRFCoordinatorUniverseWithV08Consumer(t *testing.T, key ethkey.Key) coor
 
 // newVRFCoordinatorUniverse sets up all identities and contracts associated with
 // testing the solidity VRF contracts involved in randomness request workflow
-func newVRFCoordinatorUniverse(t *testing.T, key ethkey.Key) coordinatorUniverse {
-	k, err := keystore.DecryptKey(key.JSON, cltest.Password)
-	require.NoError(t, err)
-	oracleTransactor := cltest.MustNewSimulatedBackendKeyedTransactor(t, k.PrivateKey)
+func newVRFCoordinatorUniverse(t *testing.T, key ethkey.KeyV2) coordinatorUniverse {
+	oracleTransactor := cltest.MustNewSimulatedBackendKeyedTransactor(t, key.ToEcdsaPrivKey())
 	var (
 		sergey  = newIdentity(t)
 		neil    = newIdentity(t)

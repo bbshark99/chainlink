@@ -21,7 +21,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind/backends"
-	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -53,7 +52,7 @@ var emptyList = []common.Address{}
 // fluxAggregatorUniverse represents the universe with which the aggregator
 // contract interacts
 type fluxAggregatorUniverse struct {
-	key                       ethkey.Key
+	key                       ethkey.KeyV2
 	aggregatorContract        *faw.FluxAggregator
 	aggregatorContractAddress common.Address
 	linkContract              *link_token_interface.LinkToken
@@ -103,11 +102,10 @@ func setupFluxAggregatorUniverse(t *testing.T, configOptions ...func(cfg *fluxAg
 	}
 
 	key := cltest.MustGenerateRandomKey(t)
-	k, err := keystore.DecryptKey(key.JSON, cltest.Password)
-	require.NoError(t, err)
-	oracleTransactor := cltest.MustNewSimulatedBackendKeyedTransactor(t, k.PrivateKey)
+	oracleTransactor := cltest.MustNewSimulatedBackendKeyedTransactor(t, key.ToEcdsaPrivKey())
 
 	var f fluxAggregatorUniverse
+	var err error
 	f.key = key
 	f.sergey = newIdentity(t)
 	f.neil = newIdentity(t)

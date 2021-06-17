@@ -6,20 +6,22 @@ import (
 	"github.com/smartcontractkit/chainlink/core/services/keystore/keys/ethkey"
 )
 
+// TODO - cleanup interfaces here
+
 //go:generate mockery --name KeyStoreInterface --output ./mocks/ --case=underscore
 
 // KeyStoreInterface defines an interface to interact with the keystore
 type KeyStoreInterface interface {
-	SendingKeys() ([]ethkey.Key, error)
+	SendingKeys() ([]ethkey.KeyV2, error)
 	GetRoundRobinAddress(...common.Address) (common.Address, error)
 }
 
 // KeyStore implements KeyStoreInterface
 type KeyStore struct {
-	keystore.EthKeyStoreInterface
+	keystore.Eth
 }
 
 // NewKeyStore initializes a new keystore
-func NewKeyStore(ks keystore.EthKeyStoreInterface) *KeyStore {
+func NewKeyStore(ks keystore.Eth) *KeyStore {
 	return &KeyStore{ks}
 }

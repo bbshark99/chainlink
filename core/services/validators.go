@@ -23,7 +23,7 @@ import (
 
 // ValidateJob checks the job and its associated Initiators and Tasks for any
 // application logic errors.
-func ValidateJob(j models.JobSpec, store *store.Store, keyStore *keystore.Master) error {
+func ValidateJob(j models.JobSpec, store *store.Store, keyStore keystore.Master) error {
 	fe := models.NewJSONAPIErrors()
 	if j.StartAt.Valid && j.EndAt.Valid && j.StartAt.Time.After(j.EndAt.Time) {
 		fe.Add("StartAt cannot be before EndAt")
@@ -300,7 +300,7 @@ func validateRandomnessLogInitiator(i models.Initiator, j models.JobSpec) error 
 	return fe.CoerceEmptyToNil()
 }
 
-func validateTask(task models.TaskSpec, store *store.Store, keyStore *keystore.Master) error {
+func validateTask(task models.TaskSpec, store *store.Store, keyStore keystore.Master) error {
 	adapter, err := adapters.For(task, store.Config, store.ORM, nil)
 	if err != nil {
 		return err
@@ -319,7 +319,7 @@ func validateTask(task models.TaskSpec, store *store.Store, keyStore *keystore.M
 	return nil
 }
 
-func validateTaskTypeEthTx(task models.TaskSpec, store *store.Store, keyStore *keystore.Master) error {
+func validateTaskTypeEthTx(task models.TaskSpec, store *store.Store, keyStore keystore.Master) error {
 	if task.Params.Get("fromAddress").Exists() {
 		fromAddress := task.Params.Get("fromAddress").String()
 		if !common.IsHexAddress(fromAddress) {
@@ -329,7 +329,11 @@ func validateTaskTypeEthTx(task models.TaskSpec, store *store.Store, keyStore *k
 		if err != nil {
 			return errors.Errorf("error %v finding key for address %s", err, fromAddress)
 		}
-		if key.IsFunding {
+		isFundingKey, err := keyStore.Eth().IsFundingKey(key)
+		if err != nil {
+			return errors.Wrapf(err, "while determining if key is funding key for address: %s", fromAddress)
+		}
+		if isFundingKey {
 			return errors.Errorf("address %s is a funding address, cannot use it to send transactions", fromAddress)
 		}
 	}
@@ -347,7 +351,7 @@ func validateTaskTypeRandom(task models.TaskSpec) error {
 }
 
 // ValidateServiceAgreement checks the ServiceAgreement for any application logic errors.
-func ValidateServiceAgreement(sa models.ServiceAgreement, store *store.Store, keyStore *keystore.Master) error {
+func ValidateServiceAgreement(sa models.ServiceAgreement, store *store.Store, keyStore keystore.Master) error {
 	fe := models.NewJSONAPIErrors()
 	config := store.Config
 

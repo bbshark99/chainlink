@@ -83,7 +83,6 @@ func TestOCRKeysController_Delete_NonExistentOCRKeyID(t *testing.T) {
 
 func TestOCRKeysController_Delete_HappyPath(t *testing.T) {
 	client, OCRKeyStore := setupOCRKeysControllerTests(t)
-	require.NoError(t, OCRKeyStore.Unlock(cltest.Password))
 
 	keys, _ := OCRKeyStore.FindEncryptedOCRKeyBundles()
 	initialLength := len(keys)
@@ -98,7 +97,7 @@ func TestOCRKeysController_Delete_HappyPath(t *testing.T) {
 	assert.Equal(t, initialLength, len(keys))
 }
 
-func setupOCRKeysControllerTests(t *testing.T) (cltest.HTTPClientCleaner, *keystore.OCR) {
+func setupOCRKeysControllerTests(t *testing.T) (cltest.HTTPClientCleaner, keystore.OCR) {
 	t.Parallel()
 
 	ethClient, _, assertMocksCalled := cltest.NewEthMocksWithStartupAssertions(t)

@@ -28,10 +28,8 @@ func TestCSAKeyPresenter_RenderTable(t *testing.T) {
 	p := cmd.CSAKeyPresenter{
 		JAID: cmd.JAID{ID: id},
 		CSAKeyResource: presenters.CSAKeyResource{
-			JAID:      presenters.NewJAID(id),
-			PubKey:    pubKey,
-			CreatedAt: createdAt,
-			UpdatedAt: updatedAt,
+			JAID:   presenters.NewJAID(id),
+			PubKey: pubKey,
 		},
 	}
 
@@ -70,7 +68,7 @@ func TestClient_ListCSAKeys(t *testing.T) {
 	assert.Nil(t, client.ListCSAKeys(cltest.EmptyCLIContext()))
 	require.Equal(t, 1, len(r.Renders))
 	keys := *r.Renders[0].(*cmd.CSAKeyPresenters)
-	assert.Equal(t, key.PublicKey.String(), keys[0].PubKey)
+	assert.Equal(t, key.PublicKeyString(), keys[0].PubKey)
 }
 
 func TestClient_CreateCSAKey(t *testing.T) {

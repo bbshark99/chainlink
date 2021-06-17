@@ -26,7 +26,6 @@ func TestValidateJob(t *testing.T) {
 	keyStore := cltest.NewKeyStore(t, store.DB)
 
 	// Create a funding key.
-	require.NoError(t, keyStore.Eth().Unlock(cltest.Password))
 	fundingKey, _, err := keyStore.Eth().EnsureFundingKey()
 	require.NoError(t, err)
 	tests := []struct {
@@ -320,9 +319,7 @@ func TestValidateServiceAgreement(t *testing.T) {
 	store, cleanup := cltest.NewStore(t)
 	defer cleanup()
 	keyStore := cltest.NewKeyStore(t, store.DB)
-	err := keyStore.Eth().Unlock(cltest.Password)
-	_, fromAddress := cltest.MustAddRandomKeyToKeystore(t, keyStore.Eth(), 0)
-	assert.NoError(t, err)
+	_, fromAddress := cltest.MustInsertRandomKey(t, store.DB, keyStore.Eth(), 0)
 
 	oracles := []string{fromAddress.Hex()}
 
