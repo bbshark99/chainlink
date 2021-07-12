@@ -4,7 +4,7 @@ import (
 	"context"
 	"math/big"
 
-	"github.com/smartcontractkit/chainlink/core/chains"
+	"github.com/smartcontractkit/chainlink/core/chains/evm"
 	"github.com/smartcontractkit/chainlink/core/services/eth"
 	"github.com/smartcontractkit/chainlink/core/store/models"
 )
@@ -16,7 +16,7 @@ type BlockTranslator interface {
 }
 
 // NewBlockTranslator returns the block translator for the given chain
-func NewBlockTranslator(chain *chains.Chain, client eth.Client) BlockTranslator {
+func NewBlockTranslator(chain evm.Chain, client eth.Client) BlockTranslator {
 	if chain == nil {
 		return &l1BlockTranslator{}
 	} else if chain.IsArbitrum() {

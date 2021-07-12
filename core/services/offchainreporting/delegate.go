@@ -37,7 +37,7 @@ type Delegate struct {
 	logBroadcaster     log.Broadcaster
 	peerWrapper        *SingletonPeerWrapper
 	monitoringEndpoint ocrtypes.MonitoringEndpoint
-	chain              *chains.Chain
+	chain              chains.Chain
 	headBroadcaster    httypes.HeadBroadcaster
 }
 
@@ -54,7 +54,7 @@ func NewDelegate(
 	logBroadcaster log.Broadcaster,
 	peerWrapper *SingletonPeerWrapper,
 	monitoringEndpoint ocrtypes.MonitoringEndpoint,
-	chain *chains.Chain,
+	chain chains.Chain,
 	headBroadcaster httypes.HeadBroadcaster,
 ) *Delegate {
 	return &Delegate{

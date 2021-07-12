@@ -811,7 +811,7 @@ func (ec *EthConfirmer) attemptForRebroadcast(ctx context.Context, etx EthTx) (a
 		bumpedGasPrice = ec.config.EthGasPriceDefault()
 		bumpedGasLimit = etx.GasLimit
 	}
-	return newAttempt(ec.ethClient, ec.keystore, ec.config.ChainID(), etx, bumpedGasPrice, bumpedGasLimit)
+	return newAttempt(ec.ethClient, ec.keystore, ec.ethClient.ChainID(), etx, bumpedGasPrice, bumpedGasLimit)
 }
 
 func (ec *EthConfirmer) saveInProgressAttempt(attempt *EthTxAttempt) error {
@@ -842,7 +842,7 @@ func (ec *EthConfirmer) handleInProgressAttempt(ctx context.Context, etx EthTx, 
 			"Eth node returned: '%s'. "+
 			"Bumping to %v wei and retrying. "+
 			"ACTION REQUIRED: You should consider increasing ETH_GAS_PRICE_DEFAULT", attempt.GasPrice.String(), sendError.Error(), bumpedGasPrice)
-		replacementAttempt, err := newAttempt(ec.ethClient, ec.keystore, ec.config.ChainID(), etx, bumpedGasPrice, bumpedGasLimit)
+		replacementAttempt, err := newAttempt(ec.ethClient, ec.keystore, ec.ethClient.ChainID(), etx, bumpedGasPrice, bumpedGasLimit)
 		if err != nil {
 			return errors.Wrap(err, "newAttempt failed")
 		}
@@ -1161,7 +1161,7 @@ func (ec *EthConfirmer) ForceRebroadcast(beginningNonce uint, endingNonce uint, 
 			if overrideGasLimit != 0 {
 				etx.GasLimit = overrideGasLimit
 			}
-			attempt, err := newAttempt(ec.ethClient, ec.keystore, ec.config.ChainID(), *etx, big.NewInt(int64(gasPriceWei)), etx.GasLimit)
+			attempt, err := newAttempt(ec.ethClient, ec.keystore, ec.ethClient.ChainID(), *etx, big.NewInt(int64(gasPriceWei)), etx.GasLimit)
 			if err != nil {
 				logger.Errorw("ForceRebroadcast: failed to create new attempt", "ethTxID", etx.ID, "err", err)
 				continue
@@ -1181,7 +1181,8 @@ func (ec *EthConfirmer) sendEmptyTransaction(ctx context.Context, fromAddress ge
 	if gasLimit == 0 {
 		gasLimit = ec.config.EthGasLimitDefault()
 	}
-	tx, err := sendEmptyTransaction(ec.ethClient, ec.keystore, uint64(nonce), gasLimit, big.NewInt(int64(gasPriceWei)), fromAddress, ec.config.ChainID())
+	cid := ec.ethClient.ChainID()
+	tx, err := sendEmptyTransaction(ec.ethClient, ec.keystore, uint64(nonce), gasLimit, big.NewInt(int64(gasPriceWei)), fromAddress, &cid)
 	if err != nil {
 		return gethCommon.Hash{}, errors.Wrap(err, "(EthConfirmer).sendEmptyTransaction failed")
 	}

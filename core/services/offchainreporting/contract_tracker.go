@@ -64,7 +64,7 @@ type (
 		db               OCRContractTrackerDB
 		gdb              *gorm.DB
 		blockTranslator  BlockTranslator
-		chain            *chains.Chain
+		chain            chains.Chain
 
 		// HeadBroadcaster
 		headBroadcaster  httypes.HeadBroadcaster
@@ -105,7 +105,7 @@ func NewOCRContractTracker(
 	logger logger.Logger,
 	gdb *gorm.DB,
 	db OCRContractTrackerDB,
-	chain *chains.Chain,
+	chain chains.Chain,
 	headBroadcaster httypes.HeadBroadcaster,
 ) (o *OCRContractTracker) {
 	ctx, cancel := context.WithCancel(context.Background())

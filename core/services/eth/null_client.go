@@ -88,9 +88,9 @@ func (nc *NullClient) SubscribeNewHead(ctx context.Context, ch chan<- *models.He
 // GethClient methods
 //
 
-func (nc *NullClient) ChainID(ctx context.Context) (*big.Int, error) {
+func (nc *NullClient) ChainID() big.Int {
 	logger.Debug("NullClient#ChainID")
-	return big.NewInt(NullClientChainID), nil
+	return *big.NewInt(NullClientChainID)
 }
 
 func (nc *NullClient) HeaderByNumber(ctx context.Context, n *big.Int) (*types.Header, error) {

@@ -37,7 +37,6 @@ type Config interface {
 	BlockHistoryEstimatorBlockDelay() uint16
 	BlockHistoryEstimatorBlockHistorySize() uint16
 	BlockHistoryEstimatorTransactionPercentile() uint16
-	ChainID() *big.Int
 	EthFinalityDepth() uint
 	EthGasBumpPercent() uint16
 	EthGasBumpThreshold() uint64
@@ -126,11 +125,13 @@ func NewBulletproofTxManager(db *gorm.DB, ethClient eth.Client, config Config, k
 	} else {
 		logger.Info("EthResender: Disabled")
 	}
+	// TODO: Move the reaper up a level
 	if config.EthTxReaperThreshold() > 0 {
 		b.reaper = NewReaper(db, config)
 	} else {
 		logger.Info("EthTxReaper: Disabled")
 	}
+	// TODO: Move the estimator up a level
 	b.gasEstimator = gas.NewEstimator(ethClient, config)
 
 	return &b
@@ -322,7 +323,7 @@ func SendEther(db *gorm.DB, from, to common.Address, value assets.Eth, gasLimit 
 	return etx, err
 }
 
-func newAttempt(ethClient eth.Client, ks KeyStore, chainID *big.Int, etx EthTx, gasPrice *big.Int, gasLimit uint64) (EthTxAttempt, error) {
+func newAttempt(ethClient eth.Client, ks KeyStore, chainID big.Int, etx EthTx, gasPrice *big.Int, gasLimit uint64) (EthTxAttempt, error) {
 	attempt := EthTxAttempt{}
 
 	tx := newLegacyTransaction(
@@ -335,7 +336,7 @@ func newAttempt(ethClient eth.Client, ks KeyStore, chainID *big.Int, etx EthTx, 
 	)
 
 	transaction := gethTypes.NewTx(&tx)
-	hash, signedTxBytes, err := signTx(ks, etx.FromAddress, transaction, chainID)
+	hash, signedTxBytes, err := signTx(ks, etx.FromAddress, transaction, &chainID)
 	if err != nil {
 		return attempt, errors.Wrapf(err, "error using account %s to sign transaction %v", etx.FromAddress.String(), etx.ID)
 	}

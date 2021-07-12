@@ -53,6 +53,7 @@ type (
 	BlockHistoryEstimator struct {
 		utils.StartStopOnce
 		ethClient           eth.Client
+		chainID             big.Int
 		config              Config
 		rollingBlockHistory []Block
 		mb                  *utils.Mailbox
@@ -70,11 +71,12 @@ type (
 // NewBlockHistoryEstimator returns a new BlockHistoryEstimator that listens
 // for new heads and updates the base gas price dynamically based on the
 // configured percentile of gas prices in that block
-func NewBlockHistoryEstimator(ethClient eth.Client, config Config) Estimator {
+func NewBlockHistoryEstimator(ethClient eth.Client, config Config, chainID big.Int) Estimator {
 	ctx, cancel := context.WithCancel(context.Background())
 	b := &BlockHistoryEstimator{
 		utils.StartStopOnce{},
 		ethClient,
+		chainID,
 		config,
 		make([]Block, 0),
 		utils.NewMailbox(1),
@@ -340,11 +342,10 @@ var (
 
 func (b *BlockHistoryEstimator) percentileGasPrice(percentile int) (*big.Int, error) {
 	minGasPriceWei := b.config.EthMinGasPriceWei()
-	chainID := b.config.ChainID()
 	gasPrices := make([]*big.Int, 0)
 	for _, block := range b.rollingBlockHistory {
 		for _, tx := range block.Transactions {
-			if isUsableTx(tx, minGasPriceWei, chainID) {
+			if isUsableTx(tx, minGasPriceWei, &b.chainID) {
 				gasPrices = append(gasPrices, tx.GasPrice)
 			}
 		}

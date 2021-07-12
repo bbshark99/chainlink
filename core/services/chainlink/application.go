@@ -13,11 +13,11 @@ import (
 	uuid "github.com/satori/go.uuid"
 
 	"github.com/pkg/errors"
+	"github.com/smartcontractkit/chainlink/core/chains"
 	"github.com/smartcontractkit/chainlink/core/service"
 	"github.com/smartcontractkit/chainlink/core/services/cron"
 	"github.com/smartcontractkit/chainlink/core/services/feeds"
 	"github.com/smartcontractkit/chainlink/core/services/fluxmonitorv2"
-	"github.com/smartcontractkit/chainlink/core/services/headtracker"
 	httypes "github.com/smartcontractkit/chainlink/core/services/headtracker/types"
 	"github.com/smartcontractkit/chainlink/core/services/keeper"
 	"github.com/smartcontractkit/chainlink/core/services/periodicbackup"
@@ -94,11 +94,9 @@ type Application interface {
 // and Store. The JobSubscriber and Scheduler are also available
 // in the services package, but the Store has its own package.
 type ChainlinkApplication struct {
-	Exiter          func(int)
-	HeadTracker     httypes.Tracker
-	HeadBroadcaster httypes.HeadBroadcaster
-	TxManager       bulletprooftxmanager.TxManager
-	StatsPusher     synchronization.StatsPusher
+	Exiter              func(int)
+	BlockchainUniverses []chains.Universe
+	StatsPusher         synchronization.StatsPusher
 	services.RunManager
 	RunQueue                 services.RunQueue
 	JobSubscriber            services.JobSubscriber
@@ -171,25 +169,22 @@ func NewApplication(config *orm.Config, ethClient eth.Client, advisoryLocker pos
 	// Init service loggers
 	globalLogger := config.CreateProductionLogger()
 	globalLogger.SetDB(store.DB)
-	serviceLogLevels, err := globalLogger.GetServiceLogLevels()
-	if err != nil {
-		logger.Fatalf("error getting log levels: %v", err)
-	}
-	headTrackerLogger, err := globalLogger.InitServiceLevelLogger(logger.HeadTracker, serviceLogLevels[logger.HeadTracker])
-	if err != nil {
-		logger.Fatal("error starting logger for head tracker", err)
-	}
 
-	var headBroadcaster httypes.HeadBroadcaster
-	var headTracker httypes.Tracker
-	if config.EthereumDisabled() {
-		headBroadcaster = &headtracker.NullBroadcaster{}
-		headTracker = &headtracker.NullTracker{}
-	} else {
-		headBroadcaster = headtracker.NewHeadBroadcaster()
-		orm := headtracker.NewORM(store.DB)
-		headTracker = headtracker.NewHeadTracker(headTrackerLogger, ethClient, config, orm, headBroadcaster)
+	eventBroadcaster := postgres.NewEventBroadcaster(config.DatabaseURL(), config.DatabaseListenerMinReconnectInterval(), config.DatabaseListenerMaxReconnectDuration())
+	subservices = append(subservices, eventBroadcaster)
+
+	// TODO: Rename universes to BlockchainUniverse or something
+	// TODO: Move it to services and nest other things underneath it?
+	var universes []chains.Universe
+	// TODO: Rename to "BlockchainDisabled" or something
+	if !config.EthereumDisabled() {
+		universes, err = chains.LoadUniverses(globalLogger, store.DB, store.Config, keyStore.Eth(), advisoryLocker, eventBroadcaster)
 	}
+	if len(universes) != 1 {
+		logger.Fatalf("only exactly one chain is currently supported, got: %d", len(universes))
+	}
+	universe := universes[0]
+	headBroadcaster := universe.GetHeadBroadcaster()
 
 	var runExecutor services.RunExecutor
 	var runQueue services.RunQueue
@@ -207,24 +202,12 @@ func NewApplication(config *orm.Config, ethClient eth.Client, advisoryLocker pos
 		jobSubscriber = &services.NullJobSubscriber{}
 	}
 
-	eventBroadcaster := postgres.NewEventBroadcaster(config.DatabaseURL(), config.DatabaseListenerMinReconnectInterval(), config.DatabaseListenerMaxReconnectDuration())
-	subservices = append(subservices, eventBroadcaster)
-
 	var txManager bulletprooftxmanager.TxManager
 	var logBroadcaster log.Broadcaster
 	if config.EthereumDisabled() {
 		txManager = &bulletprooftxmanager.NullTxManager{ErrMsg: "TxManager is not running because Ethereum is disabled"}
 		logBroadcaster = &log.NullBroadcaster{ErrMsg: "LogBroadcaster is not running because Ethereum is disabled"}
 	} else {
-		// Highest seen head height is used as part of the start of LogBroadcaster backfill range
-		highestSeenHead, err2 := headTracker.HighestSeenHeadFromDB()
-		if err2 != nil {
-			return nil, err2
-		}
-
-		logBroadcaster = log.NewBroadcaster(log.NewORM(store.DB), ethClient, store.Config, highestSeenHead)
-		txManager = bulletprooftxmanager.NewBulletproofTxManager(store.DB, ethClient, store.Config, keyStore.Eth(), advisoryLocker, eventBroadcaster)
-		subservices = append(subservices, logBroadcaster, txManager)
 	}
 
 	fluxMonitor := fluxmonitor.New(store, keyStore.Eth(), runManager, logBroadcaster)
@@ -341,10 +324,9 @@ func NewApplication(config *orm.Config, ethClient eth.Client, advisoryLocker pos
 	feedsService := feeds.NewService(feedsORM, postgres.NewGormTransactionManager(store.DB), keyStore.CSA(), keyStore.Eth(), config)
 
 	app := &ChainlinkApplication{
-		HeadBroadcaster:          headBroadcaster,
-		TxManager:                txManager,
+		// TODO: Start/stop blockchains
+		BlockchainUniverses:      universes,
 		JobSubscriber:            jobSubscriber,
-		LogBroadcaster:           logBroadcaster,
 		EventBroadcaster:         eventBroadcaster,
 		jobORM:                   jobORM,
 		jobSpawner:               jobSpawner,
@@ -382,14 +364,6 @@ func NewApplication(config *orm.Config, ethClient eth.Client, advisoryLocker pos
 		return runManager.ResumeAllPendingConnection()
 	}})
 
-	for _, onConnectCallback := range onConnectCallbacks {
-		headBroadcaster.Subscribe(&httypes.HeadTrackableCallback{OnConnect: func() error {
-			onConnectCallback(app)
-			return nil
-		}})
-	}
-	app.HeadTracker = headTracker
-
 	// Log Broadcaster waits for other services' registrations
 	// until app.LogBroadcaster.DependentReady() call (see below)
 	logBroadcaster.AddDependents(1)
@@ -413,7 +387,9 @@ func (app *ChainlinkApplication) SetServiceLogger(ctx context.Context, serviceNa
 	// TODO: Implement other service loggers
 	switch serviceName {
 	case logger.HeadTracker:
-		app.HeadTracker.SetLogger(newL)
+		for _, b := range app.BlockchainUniverses {
+			b.GetHeadTracker().SetLogger(newL)
+		}
 	case logger.FluxMonitor:
 		app.FluxMonitor.SetLogger(newL)
 	default:
@@ -465,9 +441,10 @@ func (app *ChainlinkApplication) Start() error {
 		app.Exiter(0)
 	}()
 
-	// EthClient must be dialed first because it is required in subtasks
-	if err := app.Store.EthClient.Dial(context.TODO()); err != nil {
-		return err
+	for _, u := range app.BlockchainUniverses {
+		if err := u.Start(); err != nil {
+			return err
+		}
 	}
 
 	if err := app.Store.Start(); err != nil {
@@ -496,17 +473,6 @@ func (app *ChainlinkApplication) Start() error {
 	// Log Broadcaster fully starts after all initial Register calls are done from other starting services
 	// to make sure the initial backfill covers those subscribers.
 	app.LogBroadcaster.DependentReady()
-
-	// HeadTracker deliberately started afterwards since several tasks are
-	// registered as callbacks and it's sensible to have started them before
-	// calling the first OnNewHead
-	// For example:
-	// RunManager.ResumeAllInProgress since it Connects JobSubscriber
-	// which leads to writes of JobRuns RunStatus to the db.
-	// https://www.pivotaltracker.com/story/show/162230780
-	if err := app.HeadTracker.Start(); err != nil {
-		return err
-	}
 
 	if err := app.Scheduler.Start(); err != nil {
 		return err

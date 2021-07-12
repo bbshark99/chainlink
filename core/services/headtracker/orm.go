@@ -2,25 +2,32 @@ package headtracker
 
 import (
 	"context"
+	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/pkg/errors"
 	"github.com/smartcontractkit/chainlink/core/logger"
 	"github.com/smartcontractkit/chainlink/core/store/models"
+	"github.com/smartcontractkit/chainlink/core/utils"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
 type ORM struct {
-	db *gorm.DB
+	db      *gorm.DB
+	chainID utils.Big
 }
 
-func NewORM(db *gorm.DB) *ORM {
-	return &ORM{db}
+func NewORM(db *gorm.DB, chainID big.Int) *ORM {
+	return &ORM{db, utils.Big(chainID)}
 }
 
 // IdempotentInsertHead inserts a head only if the hash is new. Will do nothing if hash exists already.
 // No advisory lock required because this is thread safe.
 func (orm *ORM) IdempotentInsertHead(ctx context.Context, h models.Head) error {
+	if h.ChainID.Cmp((*big.Int)(&orm.chainID)) != 0 {
+		return errors.Errorf("head chain ID %s does not match orm chain ID %s", h.ChainID.String(), orm.chainID.String())
+	}
 	err := orm.db.
 		WithContext(ctx).
 		Clauses(clause.OnConflict{
@@ -38,14 +45,14 @@ func (orm *ORM) IdempotentInsertHead(ctx context.Context, h models.Head) error {
 func (orm *ORM) TrimOldHeads(ctx context.Context, n uint) (err error) {
 	return orm.db.WithContext(ctx).Exec(`
 	DELETE FROM heads
-	WHERE number < (
+	WHERE chain_id = ? AND number < (
 		SELECT min(number) FROM (
 			SELECT number
 			FROM heads
 			ORDER BY number DESC
 			LIMIT ?
 		) numbers
-	)`, n).Error
+	)`, orm.chainID, n).Error
 }
 
 // Chain return the chain of heads starting at hash and up to lookback parents
@@ -53,12 +60,12 @@ func (orm *ORM) TrimOldHeads(ctx context.Context, n uint) (err error) {
 func (orm *ORM) Chain(ctx context.Context, hash common.Hash, lookback uint) (models.Head, error) {
 	rows, err := orm.db.WithContext(ctx).Raw(`
 	WITH RECURSIVE chain AS (
-		SELECT * FROM heads WHERE hash = ?
+		SELECT * FROM heads WHERE chain_id = ? AND hash = ?
 	UNION
 		SELECT h.* FROM heads h
 		JOIN chain ON chain.parent_hash = h.hash
 	) SELECT id, hash, number, parent_hash, timestamp, created_at FROM chain LIMIT ?
-	`, hash, lookback).Rows()
+	`, orm.chainID, hash, lookback).Rows()
 	if err != nil {
 		return models.Head{}, err
 	}
@@ -87,7 +94,7 @@ func (orm *ORM) Chain(ctx context.Context, hash common.Hash, lookback uint) (mod
 // due to re-org) it returns the most recently seen head entry.
 func (orm *ORM) LastHead(ctx context.Context) (*models.Head, error) {
 	number := &models.Head{}
-	err := orm.db.WithContext(ctx).Order("number DESC, created_at DESC, id DESC").First(number).Error
+	err := orm.db.WithContext(ctx).Where("chain_id = ?", orm.chainID).Order("number DESC, created_at DESC, id DESC").First(number).Error
 	if err == gorm.ErrRecordNotFound {
 		return nil, nil
 	}
@@ -97,7 +104,7 @@ func (orm *ORM) LastHead(ctx context.Context) (*models.Head, error) {
 // HeadByHash fetches the head with the given hash from the db, returns nil if none exists
 func (orm *ORM) HeadByHash(ctx context.Context, hash common.Hash) (*models.Head, error) {
 	head := &models.Head{}
-	err := orm.db.WithContext(ctx).Where("hash = ?", hash).First(head).Error
+	err := orm.db.WithContext(ctx).Where("chain_id = ? AND hash = ?", orm.chainID, hash).First(head).Error
 	if err == gorm.ErrRecordNotFound {
 		return nil, nil
 	}
