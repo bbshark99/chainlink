@@ -2,10 +2,10 @@ package p2pkey
 
 import (
 	"crypto/rand"
+	"encoding/hex"
 
 	cryptop2p "github.com/libp2p/go-libp2p-core/crypto"
 	peer "github.com/libp2p/go-libp2p-core/peer"
-	"github.com/pkg/errors"
 )
 
 type Raw []byte
@@ -47,37 +47,16 @@ func (key KeyV2) Raw() Raw {
 	return marshalledPrivK
 }
 
-func (key KeyV2) ToKeyV1() Key {
-	return Key{
-		PrivKey: key.PrivKey,
-	}
+func (k KeyV2) PeerID() PeerID {
+	return k.peerID
 }
 
-func (key KeyV2) ToKeyEncryptedV1() EncryptedP2PKey {
-	pubKey, err := key.PrivKey.GetPublic().Bytes()
+func (k KeyV2) PublicKeyHex() string {
+	pubKeyBytes, err := k.GetPublic().Bytes()
 	if err != nil {
 		panic(err)
 	}
-	return EncryptedP2PKey{
-		PeerID: key.peerID,
-		PubKey: PublicKeyBytes(pubKey),
-	}
-}
-
-func (k KeyV2) GetPeerID() (PeerID, error) {
-	peerID, err := peer.IDFromPrivateKey(k.PrivKey)
-	if err != nil {
-		return "", errors.WithStack(err)
-	}
-	return PeerID(peerID), err
-}
-
-func (k KeyV2) MustGetPeerID() PeerID {
-	peerID, err := k.GetPeerID()
-	if err != nil {
-		panic(err)
-	}
-	return peerID
+	return hex.EncodeToString(pubKeyBytes)
 }
 
 func fromPrivkey(privKey cryptop2p.PrivKey) (KeyV2, error) {

@@ -5,9 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"strconv"
 	"testing"
-	"time"
 
 	"github.com/smartcontractkit/chainlink/core/cmd"
 	"github.com/smartcontractkit/chainlink/core/internal/cltest"
@@ -24,25 +22,19 @@ func TestP2PKeyPresenter_RenderTable(t *testing.T) {
 	t.Parallel()
 
 	var (
-		id        = "1"
-		peerID    = "12D3KooWApUJaQB2saFjyEUfq6BmysnsSnhLnY5CF9tURYVKgoXK"
-		pubKey    = "somepubkey"
-		createdAt = time.Now()
-		updatedAt = time.Now().Add(time.Second)
-		deletedAt = time.Now().Add(2 * time.Second)
-		buffer    = bytes.NewBufferString("")
-		r         = cmd.RendererTable{Writer: buffer}
+		id     = "1"
+		peerID = "12D3KooWApUJaQB2saFjyEUfq6BmysnsSnhLnY5CF9tURYVKgoXK"
+		pubKey = "somepubkey"
+		buffer = bytes.NewBufferString("")
+		r      = cmd.RendererTable{Writer: buffer}
 	)
 
 	p := cmd.P2PKeyPresenter{
 		JAID: cmd.JAID{ID: id},
 		P2PKeyResource: presenters.P2PKeyResource{
-			JAID:      presenters.NewJAID(id),
-			PeerID:    peerID,
-			PubKey:    pubKey,
-			CreatedAt: createdAt,
-			UpdatedAt: updatedAt,
-			DeletedAt: &deletedAt,
+			JAID:   presenters.NewJAID(id),
+			PeerID: peerID,
+			PubKey: pubKey,
 		},
 	}
 
@@ -53,9 +45,6 @@ func TestP2PKeyPresenter_RenderTable(t *testing.T) {
 	assert.Contains(t, output, id)
 	assert.Contains(t, output, peerID)
 	assert.Contains(t, output, pubKey)
-	assert.Contains(t, output, createdAt.String())
-	assert.Contains(t, output, updatedAt.String())
-	assert.Contains(t, output, deletedAt.String())
 
 	// Render many resources
 	buffer.Reset()
@@ -66,20 +55,15 @@ func TestP2PKeyPresenter_RenderTable(t *testing.T) {
 	assert.Contains(t, output, id)
 	assert.Contains(t, output, peerID)
 	assert.Contains(t, output, pubKey)
-	assert.Contains(t, output, createdAt.String())
-	assert.Contains(t, output, updatedAt.String())
-	assert.Contains(t, output, deletedAt.String())
 }
 
 func TestClient_ListP2PKeys(t *testing.T) {
 	t.Parallel()
 
 	app := startNewApplication(t)
-	key, err := p2pkey.CreateKey()
+	key, err := p2pkey.NewV2()
 	require.NoError(t, err)
-	encKey, err := key.ToEncryptedP2PKey(cltest.Password, utils.FastScryptParams)
-	require.NoError(t, err)
-	err = app.GetKeyStore().OCR().UpsertEncryptedP2PKey(&encKey)
+	err = app.GetKeyStore().OCR().UpsertEncryptedP2PKey(&key)
 	require.NoError(t, err)
 
 	requireP2PKeyCount(t, app, 2) // Created  + fixture key
@@ -89,7 +73,7 @@ func TestClient_ListP2PKeys(t *testing.T) {
 	assert.Nil(t, client.ListP2PKeys(cltest.EmptyCLIContext()))
 	require.Equal(t, 1, len(r.Renders))
 	keys := *r.Renders[0].(*cmd.P2PKeyPresenters)
-	assert.Equal(t, encKey.PubKey.String(), keys[1].PubKey)
+	assert.Equal(t, key.PublicKeyHex(), keys[1].PubKey)
 }
 
 func TestClient_CreateP2PKey(t *testing.T) {
@@ -100,16 +84,11 @@ func TestClient_CreateP2PKey(t *testing.T) {
 
 	require.NoError(t, client.CreateP2PKey(nilContext))
 
-	keys, err := app.GetKeyStore().OCR().FindEncryptedP2PKeys()
+	keys, err := app.GetKeyStore().OCR().GetP2PKeys()
 	require.NoError(t, err)
 
 	// Created + fixture key
 	require.Len(t, keys, 2)
-
-	for _, e := range keys {
-		_, err = e.Decrypt(cltest.Password)
-		require.NoError(t, err)
-	}
 }
 
 func TestClient_DeleteP2PKey(t *testing.T) {
@@ -118,18 +97,16 @@ func TestClient_DeleteP2PKey(t *testing.T) {
 	app := startNewApplication(t)
 	client, _ := app.NewClientAndRenderer()
 
-	key, err := p2pkey.CreateKey()
+	key, err := p2pkey.NewV2()
 	require.NoError(t, err)
-	encKey, err := key.ToEncryptedP2PKey(cltest.Password, utils.FastScryptParams)
-	require.NoError(t, err)
-	err = app.GetKeyStore().OCR().UpsertEncryptedP2PKey(&encKey)
+	err = app.GetKeyStore().OCR().UpsertEncryptedP2PKey(&key)
 	require.NoError(t, err)
 
 	requireP2PKeyCount(t, app, 2) // Created  + fixture key
 
 	set := flag.NewFlagSet("test", 0)
 	set.Bool("yes", true, "")
-	strID := strconv.FormatInt(int64(encKey.ID), 10)
+	strID := key.ID()
 	set.Parse([]string{strID})
 	c := cli.NewContext(nil, set, nil)
 	err = client.DeleteP2PKey(c)
@@ -162,7 +139,7 @@ func TestClient_ImportExportP2PKeyBundle(t *testing.T) {
 
 	// Export test
 	set = flag.NewFlagSet("test P2P export", 0)
-	set.Parse([]string{fmt.Sprint(key.ID)})
+	set.Parse([]string{fmt.Sprint(key.ID())})
 	set.String("newpassword", "../internal/fixtures/apicredentials", "")
 	set.String("output", keyName, "")
 	c = cli.NewContext(nil, set, nil)
@@ -170,7 +147,7 @@ func TestClient_ImportExportP2PKeyBundle(t *testing.T) {
 	require.NoError(t, client.ExportP2PKey(c))
 	require.NoError(t, utils.JustError(os.Stat(keyName)))
 
-	require.NoError(t, app.GetKeyStore().OCR().DeleteEncryptedP2PKey(&key))
+	require.NoError(t, app.GetKeyStore().OCR().DeleteP2PKey(&key))
 	requireP2PKeyCount(t, app, 0)
 
 	set = flag.NewFlagSet("test P2P import", 0)
@@ -182,10 +159,10 @@ func TestClient_ImportExportP2PKeyBundle(t *testing.T) {
 	requireP2PKeyCount(t, app, 1)
 }
 
-func requireP2PKeyCount(t *testing.T, app chainlink.Application, length int) []p2pkey.EncryptedP2PKey {
+func requireP2PKeyCount(t *testing.T, app chainlink.Application, length int) []p2pkey.KeyV2 {
 	t.Helper()
 
-	keys, err := app.GetKeyStore().OCR().FindEncryptedP2PKeys()
+	keys, err := app.GetKeyStore().OCR().GetP2PKeys()
 	require.NoError(t, err)
 	require.Len(t, keys, length)
 	return keys

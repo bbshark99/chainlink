@@ -22,7 +22,7 @@ type P2PKeyPresenter struct {
 
 // RenderTable implements TableRenderer
 func (p *P2PKeyPresenter) RenderTable(rt RendererTable) error {
-	headers := []string{"ID", "Peer ID", "Public key", "Created", "Updated", "Deleted"}
+	headers := []string{"ID", "Peer ID", "Public key"}
 	rows := [][]string{p.ToRow()}
 
 	if _, err := rt.Write([]byte("🔑 P2P Keys\n")); err != nil {
@@ -34,17 +34,10 @@ func (p *P2PKeyPresenter) RenderTable(rt RendererTable) error {
 }
 
 func (p *P2PKeyPresenter) ToRow() []string {
-	var deletedAt string
-	if p.DeletedAt != nil {
-		deletedAt = p.DeletedAt.String()
-	}
 	row := []string{
 		p.ID,
 		p.PeerID,
 		p.PubKey,
-		fmt.Sprintf("%v", p.CreatedAt),
-		fmt.Sprintf("%v", p.UpdatedAt),
-		deletedAt,
 	}
 
 	return row
@@ -54,7 +47,7 @@ type P2PKeyPresenters []P2PKeyPresenter
 
 // RenderTable implements TableRenderer
 func (ps P2PKeyPresenters) RenderTable(rt RendererTable) error {
-	headers := []string{"ID", "Peer ID", "Public key", "Created", "Updated", "Deleted"}
+	headers := []string{"ID", "Peer ID", "Public key"}
 	rows := [][]string{}
 
 	for _, p := range ps {

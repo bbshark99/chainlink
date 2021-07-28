@@ -203,14 +203,14 @@ package cmd
 // 				"`chainlink node ocr` and `chainlink node p2p` subcommands")
 // 	}
 
-// 	p2pkeys, err := ocrKeyStore.FindEncryptedP2PKeys()
+// 	p2pkeys, err := ocrKeyStore.GetP2PKeys()
 // 	if err != nil {
 // 		return errors.Wrap(err, "could not fetch encrypted P2P keys from database")
 // 	}
 // 	if len(p2pkeys) == 0 {
 // 		fmt.Println("There are no P2P keys; creating a new key encrypted with given password")
 // 		var k p2pkey.EncryptedP2PKey
-// 		_, k, err = ocrKeyStore.GenerateEncryptedP2PKey()
+// 		_, k, err = ocrKeyStore.GenerateP2PKey()
 // 		if err != nil {
 // 			return errors.Wrapf(err, "while creating a new encrypted P2P key")
 // 		}

@@ -2,6 +2,7 @@ package keystore
 
 import (
 	"encoding/hex"
+	"fmt"
 
 	p2ppeer "github.com/libp2p/go-libp2p-core/peer"
 	"github.com/pkg/errors"
@@ -11,15 +12,16 @@ import (
 )
 
 type OCR interface {
-	DecryptedP2PKey(peerID p2ppeer.ID) (p2pkey.Key, bool)
-	DecryptedP2PKeys() (keys []p2pkey.Key)
+	DecryptedP2PKey(peerID p2ppeer.ID) (p2pkey.KeyV2, bool)
+	DecryptedP2PKeys() (keys []p2pkey.KeyV2)
 	DecryptedOCRKey(hash models.Sha256Hash) (ocrkey.KeyBundle, bool)
-	GenerateEncryptedP2PKey() (p2pkey.Key, p2pkey.EncryptedP2PKey, error)
-	UpsertEncryptedP2PKey(k *p2pkey.EncryptedP2PKey) error
-	FindEncryptedP2PKeys() (keys []p2pkey.EncryptedP2PKey, err error)
-	FindEncryptedP2PKeyByID(id int32) (*p2pkey.EncryptedP2PKey, error)
-	ArchiveEncryptedP2PKey(key *p2pkey.EncryptedP2PKey) error
-	DeleteEncryptedP2PKey(key *p2pkey.EncryptedP2PKey) error
+	GenerateP2PKey() (p2pkey.KeyV2, error)
+	UpsertEncryptedP2PKey(k *p2pkey.KeyV2) error
+	GetP2PKeys() (keys []p2pkey.KeyV2, err error)
+	GetP2PKey(id string) (*p2pkey.KeyV2, error)
+	FindEncryptedP2PKeyByID(id int32) (*p2pkey.KeyV2, error)
+	ArchiveEncryptedP2PKey(key *p2pkey.KeyV2) error
+	DeleteP2PKey(key *p2pkey.KeyV2) error
 	GenerateEncryptedOCRKeyBundle() (ocrkey.KeyBundle, ocrkey.EncryptedKeyBundle, error)
 	CreateEncryptedOCRKeyBundle(encryptedKey *ocrkey.EncryptedKeyBundle) error
 	UpsertEncryptedOCRKeyBundle(encryptedKey *ocrkey.EncryptedKeyBundle) error
@@ -27,7 +29,7 @@ type OCR interface {
 	FindEncryptedOCRKeyBundleByID(id models.Sha256Hash) (ocrkey.EncryptedKeyBundle, error)
 	ArchiveEncryptedOCRKeyBundle(key *ocrkey.EncryptedKeyBundle) error
 	DeleteEncryptedOCRKeyBundle(key *ocrkey.EncryptedKeyBundle) error
-	ImportP2PKey(keyJSON []byte, oldPassword string) (*p2pkey.EncryptedP2PKey, error)
+	ImportP2PKey(keyJSON []byte, oldPassword string) (*p2pkey.KeyV2, error)
 	ExportP2PKey(ID int32, newPassword string) ([]byte, error)
 	ImportOCRKeyBundle(keyJSON []byte, oldPassword string) (*ocrkey.EncryptedKeyBundle, error)
 	ExportOCRKeyBundle(id models.Sha256Hash, newPassword string) ([]byte, error)
@@ -45,18 +47,18 @@ func newOCRKeyStore(km *keyManager) ocr {
 	}
 }
 
-func (ks ocr) DecryptedP2PKey(peerID p2ppeer.ID) (p2pkey.Key, bool) {
+func (ks ocr) DecryptedP2PKey(peerID p2ppeer.ID) (p2pkey.KeyV2, bool) {
 	ks.lock.RLock()
 	defer ks.lock.RUnlock()
 	k, exists := ks.keyRing.P2P[peerID.String()]
-	return k.ToKeyV1(), exists
+	return k, exists
 }
 
-func (ks ocr) DecryptedP2PKeys() (keys []p2pkey.Key) {
+func (ks ocr) DecryptedP2PKeys() (keys []p2pkey.KeyV2) {
 	ks.lock.RLock()
 	defer ks.lock.RUnlock()
 	for _, key := range ks.keyRing.P2P {
-		keys = append(keys, key.ToKeyV1())
+		keys = append(keys, key)
 	}
 	return keys
 }
@@ -73,41 +75,54 @@ func (ks ocr) DecryptedOCRKey(hash models.Sha256Hash) (ocrkey.KeyBundle, bool) {
 	return k.ToKeyV1(), true
 }
 
-func (ks ocr) GenerateEncryptedP2PKey() (p2pkey.Key, p2pkey.EncryptedP2PKey, error) {
+func (ks ocr) GenerateP2PKey() (p2pkey.KeyV2, error) {
 	ks.lock.Lock()
 	defer ks.lock.Unlock()
 	if ks.isLocked() {
-		return p2pkey.Key{}, p2pkey.EncryptedP2PKey{}, LockedErr
+		return p2pkey.KeyV2{}, LockedErr
 	}
 	key, err := p2pkey.NewV2()
 	if err != nil {
-		return p2pkey.Key{}, p2pkey.EncryptedP2PKey{}, errors.Wrapf(err, "while generating new p2p key")
+		return p2pkey.KeyV2{}, errors.Wrapf(err, "while generating new p2p key")
 	}
 	err = ks.safeAddKey(key)
 	if err != nil {
-		return p2pkey.Key{}, p2pkey.EncryptedP2PKey{}, errors.Wrapf(err, "while adding new p2p key")
+		return p2pkey.KeyV2{}, errors.Wrapf(err, "while adding new p2p key")
 	}
-	return key.ToKeyV1(), key.ToKeyEncryptedV1(), nil
+	return key, nil
 }
 
-func (ks ocr) UpsertEncryptedP2PKey(k *p2pkey.EncryptedP2PKey) error {
+func (ks ocr) UpsertEncryptedP2PKey(k *p2pkey.KeyV2) error {
 	// not implemented in V2
 	return nil
 }
 
-func (ks ocr) FindEncryptedP2PKeys() (keys []p2pkey.EncryptedP2PKey, err error) {
+func (ks ocr) GetP2PKeys() (keys []p2pkey.KeyV2, err error) {
 	ks.lock.RLock()
 	defer ks.lock.RUnlock()
 	if ks.isLocked() {
 		return keys, LockedErr
 	}
 	for _, key := range ks.keyRing.P2P {
-		keys = append(keys, key.ToKeyEncryptedV1())
+		keys = append(keys, key)
 	}
 	return keys, nil
 }
 
-func (ks ocr) FindEncryptedP2PKeyByID(id int32) (*p2pkey.EncryptedP2PKey, error) {
+func (ks ocr) GetP2PKey(id string) (*p2pkey.KeyV2, error) {
+	ks.lock.RLock()
+	defer ks.lock.RUnlock()
+	if ks.isLocked() {
+		return nil, LockedErr
+	}
+	key, found := ks.keyRing.P2P[id]
+	if !found {
+		return nil, errors.New(fmt.Sprintf("P2P key not found with ID %s", id))
+	}
+	return &key, nil
+}
+
+func (ks ocr) FindEncryptedP2PKeyByID(id int32) (*p2pkey.KeyV2, error) {
 	ks.lock.RLock()
 	defer ks.lock.RUnlock()
 	if ks.isLocked() {
@@ -117,12 +132,17 @@ func (ks ocr) FindEncryptedP2PKeyByID(id int32) (*p2pkey.EncryptedP2PKey, error)
 	return nil, nil
 }
 
-func (ks ocr) ArchiveEncryptedP2PKey(key *p2pkey.EncryptedP2PKey) error {
-	return nil
+func (ks ocr) ArchiveEncryptedP2PKey(key *p2pkey.KeyV2) error {
+	return errors.New("hard delete only")
 }
 
-func (ks ocr) DeleteEncryptedP2PKey(key *p2pkey.EncryptedP2PKey) error {
-	return nil
+func (ks ocr) DeleteP2PKey(key *p2pkey.KeyV2) error {
+	ks.lock.RLock()
+	defer ks.lock.RUnlock()
+	if ks.isLocked() {
+		return LockedErr
+	}
+	return ks.safeRemoveKey(key)
 }
 
 func (ks ocr) GenerateEncryptedOCRKeyBundle() (ocrkey.KeyBundle, ocrkey.EncryptedKeyBundle, error) {
@@ -153,7 +173,7 @@ func (ks ocr) DeleteEncryptedOCRKeyBundle(key *ocrkey.EncryptedKeyBundle) error 
 	return nil
 }
 
-func (ks ocr) ImportP2PKey(keyJSON []byte, oldPassword string) (*p2pkey.EncryptedP2PKey, error) {
+func (ks ocr) ImportP2PKey(keyJSON []byte, oldPassword string) (*p2pkey.KeyV2, error) {
 	return nil, nil
 }
 

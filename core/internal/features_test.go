@@ -1806,12 +1806,12 @@ func setupNode(t *testing.T, owner *bind.TransactOpts, port int, dbName string, 
 	config, _, ormCleanup := heavyweight.FullTestORM(t, fmt.Sprintf("%s%d", dbName, port), true)
 	config.Dialect = dialects.PostgresWithoutLock
 	app, appCleanup := cltest.NewApplicationWithConfigAndKeyOnSimulatedBlockchain(t, config, b)
-	_, _, err := app.GetKeyStore().OCR().GenerateEncryptedP2PKey()
+	_, err := app.GetKeyStore().OCR().GenerateP2PKey()
 	require.NoError(t, err)
 	p2pIDs := app.GetKeyStore().OCR().DecryptedP2PKeys()
 	require.NoError(t, err)
 	require.Len(t, p2pIDs, 1)
-	peerID := p2pIDs[0].MustGetPeerID().Raw()
+	peerID := p2pIDs[0].PeerID().Raw()
 
 	app.Config.Set("P2P_PEER_ID", peerID)
 	app.Config.Set("P2P_LISTEN_PORT", port)

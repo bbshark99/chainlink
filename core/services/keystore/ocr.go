@@ -45,7 +45,7 @@ package keystore
 
 // 	var errs error
 
-// 	p2pkeys, err := ks.FindEncryptedP2PKeys()
+// 	p2pkeys, err := ks.GetP2PKeys()
 // 	errs = multierr.Append(errs, err)
 // 	ocrkeys, err := ks.FindEncryptedOCRKeyBundles()
 // 	errs = multierr.Append(errs, err)
@@ -56,7 +56,7 @@ package keystore
 // 		if err != nil {
 // 			continue
 // 		}
-// 		peerID, err := k.GetPeerID()
+// 		peerID, err := k.PeerID()
 // 		if err != nil {
 // 			continue
 // 		}
@@ -101,7 +101,7 @@ package keystore
 // 	return k, exists
 // }
 
-// func (ks *ocr) GenerateEncryptedP2PKey() (p2pkey.Key, p2pkey.EncryptedP2PKey, error) {
+// func (ks *ocr) GenerateP2PKey() (p2pkey.Key, p2pkey.EncryptedP2PKey, error) {
 // 	key, err := p2pkey.CreateKey()
 // 	if err != nil {
 // 		return p2pkey.Key{}, p2pkey.EncryptedP2PKey{}, errors.Wrapf(err, "while generating new p2p key")
@@ -138,7 +138,7 @@ package keystore
 // 	return nil
 // }
 
-// func (ks *ocr) FindEncryptedP2PKeys() (keys []p2pkey.EncryptedP2PKey, err error) {
+// func (ks *ocr) GetP2PKeys() (keys []p2pkey.EncryptedP2PKey, err error) {
 // 	return keys, ks.Order("created_at asc, id asc").Find(&keys).Error
 // }
 
@@ -155,18 +155,18 @@ package keystore
 // 	if err != nil {
 // 		return err
 // 	}
-// 	delete(ks.p2pkeys, key.PeerID)
+// 	delete(ks.p2pkeys, key.PeerID())
 // 	return nil
 // }
 
-// func (ks *ocr) DeleteEncryptedP2PKey(key *p2pkey.EncryptedP2PKey) error {
+// func (ks *ocr) DeleteP2PKey(key *p2pkey.EncryptedP2PKey) error {
 // 	ks.mu.Lock()
 // 	defer ks.mu.Unlock()
 // 	err := ks.Unscoped().Delete(key).Error
 // 	if err != nil {
 // 		return err
 // 	}
-// 	delete(ks.p2pkeys, key.PeerID)
+// 	delete(ks.p2pkeys, key.PeerID())
 // 	return nil
 // }
 

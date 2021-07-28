@@ -35,22 +35,22 @@ func Test_SingletonPeerWrapper_Start(t *testing.T) {
 		require.NoError(t, pw.Start())
 	})
 
-	var k p2pkey.Key
+	var k p2pkey.KeyV2
 	var err error
 
 	t.Run("with one p2p key and matching P2P_PEER_ID returns nil", func(t *testing.T) {
 		keyStore := cltest.NewKeyStore(t, db).OCR()
-		k, _, err = keyStore.GenerateEncryptedP2PKey()
+		k, err = keyStore.GenerateP2PKey()
 		require.NoError(t, err)
 
-		store.Config.Set("P2P_PEER_ID", k.MustGetPeerID())
+		store.Config.Set("P2P_PEER_ID", k.PeerID())
 
 		require.NoError(t, err)
 
 		pw := offchainreporting.NewSingletonPeerWrapper(keyStore, store.Config, store.DB)
 
 		require.NoError(t, pw.Start(), "foo")
-		require.Equal(t, k.MustGetPeerID(), pw.PeerID)
+		require.Equal(t, k.PeerID(), pw.PeerID)
 	})
 
 	t.Run("with one p2p key and no P2P_PEER_ID returns error", func(t *testing.T) {
@@ -70,24 +70,24 @@ func Test_SingletonPeerWrapper_Start(t *testing.T) {
 
 		pw := offchainreporting.NewSingletonPeerWrapper(keyStore, store.Config, store.DB)
 
-		require.EqualError(t, pw.Start(), fmt.Sprintf("multiple p2p keys found but none matched the given P2P_PEER_ID of '%v'. Keys available: %s", cltest.DefaultP2PPeerID, k.MustGetPeerID()))
+		require.EqualError(t, pw.Start(), fmt.Sprintf("multiple p2p keys found but none matched the given P2P_PEER_ID of '%v'. Keys available: %s", cltest.DefaultP2PPeerID, k.PeerID()))
 	})
 
-	var k2 p2pkey.Key
+	var k2 p2pkey.KeyV2
 
 	t.Run("with multiple p2p keys and valid P2P_PEER_ID returns nil", func(t *testing.T) {
 		keyStore := cltest.NewKeyStore(t, db).OCR()
-		k2, _, err = keyStore.GenerateEncryptedP2PKey()
+		k2, err = keyStore.GenerateP2PKey()
 		require.NoError(t, err)
 
-		store.Config.Set("P2P_PEER_ID", k2.MustGetPeerID())
+		store.Config.Set("P2P_PEER_ID", k2.PeerID())
 
 		require.NoError(t, err)
 
 		pw := offchainreporting.NewSingletonPeerWrapper(keyStore, store.Config, store.DB)
 
 		require.NoError(t, pw.Start(), "foo")
-		require.Equal(t, k2.MustGetPeerID(), pw.PeerID)
+		require.Equal(t, k2.PeerID(), pw.PeerID)
 	})
 
 	t.Run("with multiple p2p keys and mismatching P2P_PEER_ID returns error", func(t *testing.T) {

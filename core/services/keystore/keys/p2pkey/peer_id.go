@@ -10,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 )
 
+// TODO - RYAN - let's get rid of this?
 const peerIDPrefix = "p2p_"
 
 type PeerID peer.ID

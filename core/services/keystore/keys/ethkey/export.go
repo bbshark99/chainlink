@@ -6,27 +6,20 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/pkg/errors"
 	"github.com/smartcontractkit/chainlink/core/utils"
-	"go.uber.org/multierr"
 )
 
 const keyTypeIdentifier = "Eth"
 
 func FromEncryptedJSON(keyJSON []byte, password string) (KeyV2, error) {
-	var key KeyV2
-	var merr error
-	var err2 error
-	// TODO - remove once keystore V1 is removed
-	key, err := decryptV1(keyJSON, password)
-	if err != nil {
-		merr = multierr.Append(merr, err)
-		key, err2 = decryptV2(keyJSON, password)
-		if err2 != nil {
-			merr = multierr.Append(merr, err2)
-			merr = multierr.Append(merr, errors.New("invalid key json"))
-			return KeyV2{}, merr
-		}
+	var export EncryptedEthKeyExport
+	if err := json.Unmarshal(keyJSON, &export); err != nil {
+		return KeyV2{}, err
 	}
-	return key, nil
+	privKey, err := keystore.DecryptDataV3(export.Crypto, adulteratedPassword(password))
+	if err != nil {
+		return KeyV2{}, errors.Wrap(err, "failed to decrypt key")
+	}
+	return Raw(privKey).Key(), nil
 }
 
 type EncryptedEthKeyExport struct {

@@ -14,8 +14,6 @@ import (
 
 // Eth is the external interface for EthKeyStore
 type Eth interface {
-	// Unlock(password string) error
-
 	// Requires Unlock
 	CreateNewKey() (ethkey.KeyV2, error)
 	EnsureFundingKey() (key ethkey.KeyV2, didExist bool, err error)

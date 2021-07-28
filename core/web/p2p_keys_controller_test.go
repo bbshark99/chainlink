@@ -3,7 +3,6 @@ package web_test
 import (
 	"fmt"
 	"net/http"
-	"strconv"
 	"testing"
 
 	"github.com/libp2p/go-libp2p-core/peer"
@@ -21,7 +20,7 @@ func TestP2PKeysController_Index_HappyPath(t *testing.T) {
 	t.Parallel()
 
 	client, OCRKeyStore := setupP2PKeysControllerTests(t)
-	keys, _ := OCRKeyStore.FindEncryptedP2PKeys()
+	keys, _ := OCRKeyStore.GetP2PKeys()
 
 	response, cleanup := client.Get("/v2/keys/p2p")
 	t.Cleanup(cleanup)
@@ -33,9 +32,9 @@ func TestP2PKeysController_Index_HappyPath(t *testing.T) {
 
 	require.Len(t, resources, len(keys))
 
-	assert.Equal(t, strconv.Itoa(int(keys[0].ID)), resources[0].ID)
-	assert.Equal(t, keys[0].PubKey.String(), resources[0].PubKey)
-	assert.Equal(t, keys[0].PeerID.String(), resources[0].PeerID)
+	assert.Equal(t, keys[0].ID(), resources[0].ID)
+	assert.Equal(t, keys[0].PublicKeyHex(), resources[0].PubKey)
+	assert.Equal(t, keys[0].PeerID().String(), resources[0].PeerID)
 }
 
 func TestP2PKeysController_Create_HappyPath(t *testing.T) {
@@ -43,14 +42,14 @@ func TestP2PKeysController_Create_HappyPath(t *testing.T) {
 
 	client, OCRKeyStore := setupP2PKeysControllerTests(t)
 
-	keys, _ := OCRKeyStore.FindEncryptedP2PKeys()
+	keys, _ := OCRKeyStore.GetP2PKeys()
 	initialLength := len(keys)
 
 	response, cleanup := client.Post("/v2/keys/p2p", nil)
 	t.Cleanup(cleanup)
 	cltest.AssertServerResponse(t, response, http.StatusOK)
 
-	keys, _ = OCRKeyStore.FindEncryptedP2PKeys()
+	keys, _ = OCRKeyStore.GetP2PKeys()
 	require.Len(t, keys, initialLength+1)
 
 	resource := presenters.P2PKeyResource{}
@@ -58,9 +57,9 @@ func TestP2PKeysController_Create_HappyPath(t *testing.T) {
 	assert.NoError(t, err)
 
 	lastKeyIndex := len(keys) - 1
-	assert.Equal(t, strconv.Itoa(int(keys[lastKeyIndex].ID)), resource.ID)
-	assert.Equal(t, keys[lastKeyIndex].PubKey.String(), resource.PubKey)
-	assert.Equal(t, keys[lastKeyIndex].PeerID.String(), resource.PeerID)
+	assert.Equal(t, keys[lastKeyIndex].ID(), resource.ID)
+	assert.Equal(t, keys[lastKeyIndex].PublicKeyHex(), resource.PubKey)
+	assert.Equal(t, keys[lastKeyIndex].PeerID().String(), resource.PeerID)
 
 	var peerID p2pkey.PeerID
 	peerID.UnmarshalText([]byte(resource.PeerID))
@@ -95,16 +94,16 @@ func TestP2PKeysController_Delete_HappyPath(t *testing.T) {
 
 	client, OCRKeyStore := setupP2PKeysControllerTests(t)
 
-	keys, _ := OCRKeyStore.FindEncryptedP2PKeys()
+	keys, _ := OCRKeyStore.GetP2PKeys()
 	initialLength := len(keys)
-	_, encryptedKeyBundle, _ := OCRKeyStore.GenerateEncryptedP2PKey()
+	key, _ := OCRKeyStore.GenerateP2PKey()
 
-	response, cleanup := client.Delete(fmt.Sprintf("/v2/keys/p2p/%d", encryptedKeyBundle.ID))
+	response, cleanup := client.Delete(fmt.Sprintf("/v2/keys/p2p/%s", key.ID()))
 	t.Cleanup(cleanup)
 	assert.Equal(t, http.StatusOK, response.StatusCode)
-	assert.Error(t, utils.JustError(OCRKeyStore.FindEncryptedP2PKeyByID(encryptedKeyBundle.ID)))
+	assert.Error(t, utils.JustError(OCRKeyStore.GetP2PKey(key.ID())))
 
-	keys, _ = OCRKeyStore.FindEncryptedP2PKeys()
+	keys, _ = OCRKeyStore.GetP2PKeys()
 	assert.Equal(t, initialLength, len(keys))
 }
 

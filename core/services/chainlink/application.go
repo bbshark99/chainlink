@@ -448,13 +448,13 @@ func setupConfig(cfg *config.Config, db *gorm.DB) {
 	cfg.SetRuntimeStore(orm)
 
 	if !cfg.P2PPeerIDIsSet() {
-		var keys []p2pkey.EncryptedP2PKey
+		var keys []p2pkey.KeyV2
 		err := db.Order("created_at asc, id asc").Find(&keys).Error
 		if err != nil {
 			logger.Warnw("Failed to load keys", "err", err)
 		} else {
 			if len(keys) > 0 {
-				peerID := keys[0].PeerID
+				peerID := keys[0].PeerID()
 				logger.Debugw("P2P_PEER_ID was not set, using the first available key", "peerID", peerID.String())
 				cfg.Set("P2P_PEER_ID", peerID)
 				if len(keys) > 1 {

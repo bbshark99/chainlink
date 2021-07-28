@@ -9,7 +9,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/smartcontractkit/chainlink/core/logger"
 	"github.com/smartcontractkit/chainlink/core/services/chainlink"
-	"github.com/smartcontractkit/chainlink/core/services/keystore/keys/p2pkey"
 	"github.com/smartcontractkit/chainlink/core/web/presenters"
 )
 
@@ -22,7 +21,7 @@ type P2PKeysController struct {
 // Example:
 // "GET <application>/keys/p2p"
 func (p2pkc *P2PKeysController) Index(c *gin.Context) {
-	keys, err := p2pkc.App.GetKeyStore().OCR().FindEncryptedP2PKeys()
+	keys, err := p2pkc.App.GetKeyStore().OCR().GetP2PKeys()
 	if err != nil {
 		jsonAPIError(c, http.StatusInternalServerError, err)
 		return
@@ -34,7 +33,7 @@ func (p2pkc *P2PKeysController) Index(c *gin.Context) {
 // Example:
 // "POST <application>/keys/p2p"
 func (p2pkc *P2PKeysController) Create(c *gin.Context) {
-	_, key, err := p2pkc.App.GetKeyStore().OCR().GenerateEncryptedP2PKey()
+	key, err := p2pkc.App.GetKeyStore().OCR().GenerateP2PKey()
 	if err != nil {
 		jsonAPIError(c, http.StatusInternalServerError, err)
 		return
@@ -47,32 +46,18 @@ func (p2pkc *P2PKeysController) Create(c *gin.Context) {
 // "DELETE <application>/keys/p2p/:keyID"
 // "DELETE <application>/keys/p2p/:keyID?hard=true"
 func (p2pkc *P2PKeysController) Delete(c *gin.Context) {
-	var hardDelete bool
 	var err error
-	if c.Query("hard") != "" {
-		hardDelete, err = strconv.ParseBool(c.Query("hard"))
-		if err != nil {
-			jsonAPIError(c, http.StatusUnprocessableEntity, err)
-			return
-		}
-	}
-
-	ep2pk := p2pkey.EncryptedP2PKey{}
-	err = ep2pk.SetID(c.Param("keyID"))
+	keyID := c.Param("keyID")
 	if err != nil {
 		jsonAPIError(c, http.StatusUnprocessableEntity, err)
 		return
 	}
-	key, err := p2pkc.App.GetKeyStore().OCR().FindEncryptedP2PKeyByID(ep2pk.ID)
+	key, err := p2pkc.App.GetKeyStore().OCR().GetP2PKey(keyID)
 	if err != nil {
 		jsonAPIError(c, http.StatusNotFound, err)
 		return
 	}
-	if hardDelete {
-		err = p2pkc.App.GetKeyStore().OCR().DeleteEncryptedP2PKey(key)
-	} else {
-		err = p2pkc.App.GetKeyStore().OCR().ArchiveEncryptedP2PKey(key)
-	}
+	err = p2pkc.App.GetKeyStore().OCR().DeleteP2PKey(key)
 	if err != nil {
 		jsonAPIError(c, http.StatusInternalServerError, err)
 		return

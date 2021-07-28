@@ -90,7 +90,7 @@ func (p *SingletonPeerWrapper) Start() error {
 			return nil
 		}
 
-		var key p2pkey.Key
+		var key p2pkey.KeyV2
 		var matched bool
 		checkedKeys := []string{}
 		configuredPeerID, err := p.config.P2PPeerID(nil)
@@ -98,11 +98,7 @@ func (p *SingletonPeerWrapper) Start() error {
 			return errors.Wrap(err, "failed to start peer wrapper")
 		}
 		for _, k := range p2pkeys {
-			var peerID p2pkey.PeerID
-			peerID, err = k.GetPeerID()
-			if err != nil {
-				return errors.Wrap(err, "unexpectedly failed to get peer ID from key")
-			}
+			peerID := k.PeerID()
 			if peerID == configuredPeerID {
 				key = k
 				matched = true
@@ -118,7 +114,7 @@ func (p *SingletonPeerWrapper) Start() error {
 			return errors.Errorf("multiple p2p keys found but none matched the given P2P_PEER_ID of '%s'. Keys available: %s", configuredPeerID, keys)
 		}
 
-		p.PeerID, err = key.GetPeerID()
+		p.PeerID = key.PeerID()
 		if err != nil {
 			return errors.Wrap(err, "could not get peer ID")
 		}
