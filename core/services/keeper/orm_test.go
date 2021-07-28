@@ -365,7 +365,14 @@ func TestKeeperDB_CreateEthTransactionForUpkeep(t *testing.T) {
 	defer cancel()
 	gasLimit := upkeep.ExecuteGas + store.Config.KeeperRegistryPerformGasOverhead()
 	err = postgres.GormTransaction(ctx, orm.DB, func(tx *gorm.DB) error {
-		txm.On("CreateEthTransaction", tx, fromAddress, toAddress, payload, gasLimit, nil, bulletprooftxmanager.SendEveryStrategy{}).Once().Return(bulletprooftxmanager.EthTx{
+		txm.On("CreateEthTransaction", tx, bulletprooftxmanager.NewTx{
+			FromAddress:    fromAddress,
+			ToAddress:      toAddress,
+			EncodedPayload: payload,
+			GasLimit:       gasLimit,
+			Meta:           nil,
+			Strategy:       bulletprooftxmanager.SendEveryStrategy{},
+		}).Once().Return(bulletprooftxmanager.EthTx{
 			FromAddress:    fromAddress,
 			ToAddress:      toAddress,
 			EncodedPayload: payload,

@@ -224,7 +224,7 @@ func (executer *UpkeepExecuter) execute(upkeep UpkeepRegistration, headNumber in
 			return errors.Wrap(err, "failed to set last run height for upkeep")
 		}
 
-		_, err = executer.pr.InsertFinishedRun(dbtx, pipeline.Run{
+		_, err = executer.pr.InsertFinishedRun(postgres.UnwrapGorm(dbtx), pipeline.Run{
 			State:          pipeline.RunStatusCompleted,
 			PipelineSpecID: executer.job.PipelineSpecID,
 			Meta: pipeline.JSONSerializable{
@@ -236,7 +236,7 @@ func (executer *UpkeepExecuter) execute(upkeep UpkeepRegistration, headNumber in
 			}},
 			CreatedAt:  start,
 			FinishedAt: null.TimeFrom(f),
-		}, nil, false)
+		}, false)
 		if err != nil {
 			return errors.Wrap(err, "UpkeepExecuter: failed to insert finished run")
 		}

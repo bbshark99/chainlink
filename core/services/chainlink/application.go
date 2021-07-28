@@ -78,7 +78,7 @@ type Application interface {
 	AddJobV2(ctx context.Context, job job.Job, name null.String) (job.Job, error)
 	DeleteJob(ctx context.Context, jobID int32) error
 	RunWebhookJobV2(ctx context.Context, jobUUID uuid.UUID, requestBody string, meta pipeline.JSONSerializable) (int64, error)
-	ResumeJobV2(ctx context.Context, run *pipeline.Run) (bool, error)
+	ResumeJobV2(ctx context.Context, taskID uuid.UUID, result interface{}) error
 	// Testing only
 	RunJobV2(ctx context.Context, jobID int32, meta map[string]interface{}) (int64, error)
 	SetServiceLogger(ctx context.Context, service string, level zapcore.Level) error
@@ -223,6 +223,8 @@ func NewApplication(cfg *config.Config, ethClient eth.Client, advisoryLocker pos
 		pipelineRunner = pipeline.NewRunner(pipelineORM, cfg, ethClient, keyStore.Eth(), keyStore.VRF(), txManager)
 		jobORM         = job.NewORM(store.ORM.DB, cfg, pipelineORM, eventBroadcaster, advisoryLocker)
 	)
+
+	txManager.ResumeCallback(pipelineRunner.ResumeRun)
 
 	var (
 		delegates = map[job.Type]job.Delegate{
@@ -667,9 +669,10 @@ func (app *ChainlinkApplication) RunJobV2(
 
 func (app *ChainlinkApplication) ResumeJobV2(
 	ctx context.Context,
-	run *pipeline.Run,
-) (bool, error) {
-	return app.pipelineRunner.Run(ctx, run, *logger.Default, false)
+	taskID uuid.UUID,
+	result interface{},
+) error {
+	return app.pipelineRunner.ResumeRun(taskID, result)
 }
 
 func (app *ChainlinkApplication) GetFeedsService() feeds.Service {
