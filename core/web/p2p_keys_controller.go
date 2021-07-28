@@ -1,10 +1,8 @@
 package web
 
 import (
-	"errors"
 	"io/ioutil"
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/smartcontractkit/chainlink/core/logger"
@@ -92,15 +90,9 @@ func (p2pkc *P2PKeysController) Import(c *gin.Context) {
 func (p2pkc *P2PKeysController) Export(c *gin.Context) {
 	defer logger.ErrorIfCalling(c.Request.Body.Close)
 
-	stringID := c.Param("ID")
-	id64, err := strconv.ParseInt(stringID, 10, 32)
-	if err != nil {
-		jsonAPIError(c, http.StatusInternalServerError, errors.New("invalid key ID"))
-		return
-	}
-	id := int32(id64)
+	stringID := c.Param("ID") // TODO - RYAN - make all these match
 	newPassword := c.Query("newpassword")
-	bytes, err := p2pkc.App.GetKeyStore().OCR().ExportP2PKey(id, newPassword)
+	bytes, err := p2pkc.App.GetKeyStore().OCR().ExportP2PKey(stringID, newPassword)
 	if err != nil {
 		jsonAPIError(c, http.StatusInternalServerError, err)
 		return

@@ -1808,7 +1808,7 @@ func setupNode(t *testing.T, owner *bind.TransactOpts, port int, dbName string, 
 	app, appCleanup := cltest.NewApplicationWithConfigAndKeyOnSimulatedBlockchain(t, config, b)
 	_, err := app.GetKeyStore().OCR().GenerateP2PKey()
 	require.NoError(t, err)
-	p2pIDs := app.GetKeyStore().OCR().DecryptedP2PKeys()
+	p2pIDs, err := app.GetKeyStore().OCR().GetP2PKeys()
 	require.NoError(t, err)
 	require.Len(t, p2pIDs, 1)
 	peerID := p2pIDs[0].PeerID().Raw()

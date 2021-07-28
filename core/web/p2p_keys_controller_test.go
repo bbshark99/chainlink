@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/smartcontractkit/chainlink/core/internal/cltest"
 	"github.com/smartcontractkit/chainlink/core/services/keystore"
 	"github.com/smartcontractkit/chainlink/core/services/keystore/keys/p2pkey"
@@ -63,7 +62,7 @@ func TestP2PKeysController_Create_HappyPath(t *testing.T) {
 
 	var peerID p2pkey.PeerID
 	peerID.UnmarshalText([]byte(resource.PeerID))
-	_, exists := OCRKeyStore.DecryptedP2PKey(peer.ID(peerID))
+	_, exists := OCRKeyStore.GetP2PKey(peerID.String())
 	assert.Equal(t, exists, true)
 }
 

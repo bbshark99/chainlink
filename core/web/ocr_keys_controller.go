@@ -67,11 +67,7 @@ func (ocrkc *OCRKeysController) Delete(c *gin.Context) {
 		jsonAPIError(c, http.StatusNotFound, err)
 		return
 	}
-	if hardDelete {
-		err = ocrkc.App.GetKeyStore().OCR().DeleteEncryptedOCRKeyBundle(&ekb)
-	} else {
-		err = ocrkc.App.GetKeyStore().OCR().ArchiveEncryptedOCRKeyBundle(&ekb)
-	}
+	err = ocrkc.App.GetKeyStore().OCR().DeleteOCRKey(&ekb)
 	if err != nil {
 		jsonAPIError(c, http.StatusInternalServerError, err)
 		return

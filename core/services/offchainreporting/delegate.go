@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/pkg/errors"
 	"gorm.io/gorm"
 
@@ -216,9 +217,10 @@ func (d Delegate) ServicesForSpec(jobSpec job.Job) (services []job.Service, err 
 		if err != nil {
 			return nil, err
 		}
-		ocrkey, exists := d.keyStore.DecryptedOCRKey(kb)
-		if !exists {
-			return nil, errors.Errorf("OCR key '%v' does not exist", concreteSpec.EncryptedOCRKeyBundleID)
+		keyID := hexutil.Encode(kb[:])
+		ocrkey, err := d.keyStore.GetOCRKey(keyID)
+		if err != nil {
+			return nil, err
 		}
 		contractABI, err := abi.JSON(strings.NewReader(offchainaggregator.OffchainAggregatorABI))
 		if err != nil {

@@ -152,7 +152,7 @@ func TestClient_ImportExportOCRKeyBundle(t *testing.T) {
 	require.NoError(t, client.ExportOCRKey(c))
 	require.NoError(t, utils.JustError(os.Stat(keyName)))
 
-	require.NoError(t, app.GetKeyStore().OCR().DeleteEncryptedOCRKeyBundle(&key))
+	require.NoError(t, app.GetKeyStore().OCR().DeleteOCRKey(&key))
 	requireOCRKeyCount(t, app, 0)
 
 	set = flag.NewFlagSet("test OCR import", 0)

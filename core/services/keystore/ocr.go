@@ -83,7 +83,7 @@ package keystore
 // 	return k, exists
 // }
 
-// func (ks *ocr) DecryptedP2PKeys() (keys []p2pkey.Key) {
+// func (ks *ocr) GetP2PKeys() (keys []p2pkey.Key) {
 // 	ks.mu.RLock()
 // 	defer ks.mu.RUnlock()
 
@@ -240,7 +240,7 @@ package keystore
 // }
 
 // // DeleteEncryptedOCRKeyBundle deletes the provided encrypted OCR key bundle
-// func (ks *ocr) DeleteEncryptedOCRKeyBundle(key *ocrkey.EncryptedKeyBundle) error {
+// func (ks *ocr) DeleteOCRKey(key *ocrkey.EncryptedKeyBundle) error {
 // 	ks.mu.Lock()
 // 	defer ks.mu.Unlock()
 // 	err := ks.Unscoped().Delete(key).Error
