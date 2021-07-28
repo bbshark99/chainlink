@@ -24,7 +24,7 @@ package keystore
 // 	*gorm.DB
 // 	password     string
 // 	p2pkeys      map[p2pkey.PeerID]p2pkey.Key
-// 	ocrkeys      map[models.Sha256Hash]ocrkey.KeyBundle
+// 	ocrkeys      map[models.Sha256Hash]ocrkey.KeyV2
 // 	scryptParams utils.ScryptParams
 // 	mu           *sync.RWMutex
 // }
@@ -33,7 +33,7 @@ package keystore
 // 	return &ocr{
 // 		DB:           db,
 // 		p2pkeys:      make(map[p2pkey.PeerID]p2pkey.Key),
-// 		ocrkeys:      make(map[models.Sha256Hash]ocrkey.KeyBundle),
+// 		ocrkeys:      make(map[models.Sha256Hash]ocrkey.KeyV2),
 // 		scryptParams: scryptParams,
 // 		mu:           new(sync.RWMutex),
 // 	}
@@ -94,7 +94,7 @@ package keystore
 // 	return keys
 // }
 
-// func (ks *ocr) DecryptedOCRKey(hash models.Sha256Hash) (ocrkey.KeyBundle, bool) {
+// func (ks *ocr) DecryptedOCRKey(hash models.Sha256Hash) (ocrkey.KeyV2, bool) {
 // 	ks.mu.RLock()
 // 	defer ks.mu.RUnlock()
 // 	k, exists := ks.ocrkeys[hash]
@@ -170,18 +170,18 @@ package keystore
 // 	return nil
 // }
 
-// func (ks *ocr) GenerateEncryptedOCRKeyBundle() (ocrkey.KeyBundle, ocrkey.EncryptedKeyBundle, error) {
+// func (ks *ocr) GenerateOCRKey() (ocrkey.KeyV2, ocrkey.EncryptedKeyBundle, error) {
 // 	key, err := ocrkey.NewKeyBundle()
 // 	if err != nil {
-// 		return ocrkey.KeyBundle{}, ocrkey.EncryptedKeyBundle{}, errors.Wrapf(err, "while generating the new OCR key bundle")
+// 		return ocrkey.KeyV2{}, ocrkey.EncryptedKeyBundle{}, errors.Wrapf(err, "while generating the new OCR key bundle")
 // 	}
 // 	enc, err := key.Encrypt(ks.password, ks.scryptParams)
 // 	if err != nil {
-// 		return ocrkey.KeyBundle{}, ocrkey.EncryptedKeyBundle{}, errors.Wrapf(err, "while encrypting the new OCR key bundle")
+// 		return ocrkey.KeyV2{}, ocrkey.EncryptedKeyBundle{}, errors.Wrapf(err, "while encrypting the new OCR key bundle")
 // 	}
 // 	err = ks.CreateEncryptedOCRKeyBundle(enc)
 // 	if err != nil {
-// 		return ocrkey.KeyBundle{}, ocrkey.EncryptedKeyBundle{}, err
+// 		return ocrkey.KeyV2{}, ocrkey.EncryptedKeyBundle{}, err
 // 	}
 // 	ks.mu.Lock()
 // 	defer ks.mu.Unlock()
@@ -220,8 +220,8 @@ package keystore
 // 	return keys, err
 // }
 
-// // FindEncryptedOCRKeyBundleByID finds an EncryptedKeyBundle bundle by its ID
-// func (ks *ocr) FindEncryptedOCRKeyBundleByID(id models.Sha256Hash) (ocrkey.EncryptedKeyBundle, error) {
+// // GetOCRKey finds an EncryptedKeyBundle bundle by its ID
+// func (ks *ocr) GetOCRKey(id models.Sha256Hash) (ocrkey.EncryptedKeyBundle, error) {
 // 	var key ocrkey.EncryptedKeyBundle
 // 	err := ks.Where("id = ?", id).First(&key).Error
 // 	return key, err
@@ -333,7 +333,7 @@ package keystore
 // 	defer ks.mu.Unlock()
 
 // 	emptyExport := []byte{}
-// 	encryptedOCRKey, err := ks.FindEncryptedOCRKeyBundleByID(id)
+// 	encryptedOCRKey, err := ks.GetOCRKey(id)
 // 	if err != nil {
 // 		return emptyExport, errors.Wrap(err, "unable to find OCR key with given ID")
 // 	}

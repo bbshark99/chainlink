@@ -225,7 +225,7 @@ package cmd
 // 	}
 // 	if len(ocrkeys) == 0 {
 // 		fmt.Println("There are no OCR keys; creating a new key encrypted with given password")
-// 		_, _, err := ocrKeyStore.GenerateEncryptedOCRKeyBundle()
+// 		_, _, err := ocrKeyStore.GenerateOCRKey()
 // 		if err != nil {
 // 			return errors.Wrapf(err, "while creating a new encrypted OCR key")
 // 		}

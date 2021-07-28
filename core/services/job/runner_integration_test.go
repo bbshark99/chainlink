@@ -422,7 +422,7 @@ ds1 -> ds1_parse;
 		keyStore := cltest.NewKeyStore(t, db).OCR()
 		key, err := keyStore.GenerateP2PKey()
 		require.NoError(t, err)
-		kb, _, err := keyStore.GenerateEncryptedOCRKeyBundle()
+		kb, err := keyStore.GenerateOCRKey()
 		require.NoError(t, err)
 		var os = job.Job{}
 		s := `
@@ -441,7 +441,7 @@ ds1 -> ds1_parse;
 		config.Set("P2P_PEER_ID", key.PeerID())
 		config.Set("P2P_BOOTSTRAP_PEERS", []string{"/dns4/chain.link/tcp/1234/p2p/16Uiu2HAm58SP7UL8zsnpeuwHfytLocaqgnyaYKP8wu7qRdrixLju",
 			"/dns4/chain.link/tcp/1235/p2p/16Uiu2HAm58SP7UL8zsnpeuwHfytLocaqgnyaYKP8wu7qRdrixLju"})
-		config.Set("OCR_KEY_BUNDLE_ID", kb.ID.String())
+		config.Set("OCR_KEY_BUNDLE_ID", kb.ID())
 		config.Set("OCR_TRANSMITTER_ADDRESS", transmitterAddress)
 		os, err = offchainreporting.ValidatedOracleSpecToml(config.Config, s)
 		require.NoError(t, err)
@@ -481,11 +481,11 @@ ds1 -> ds1_parse;
 		keyStore := cltest.NewKeyStore(t, db).OCR()
 		key, err := keyStore.GenerateP2PKey()
 		require.NoError(t, err)
-		kb, _, err := keyStore.GenerateEncryptedOCRKeyBundle()
+		kb, err := keyStore.GenerateOCRKey()
 		require.NoError(t, err)
 		var os = job.Job{}
 
-		s := fmt.Sprintf(minimalNonBootstrapTemplate, cltest.NewEIP55Address(), key.PeerID(), transmitterAddress.Hex(), kb.ID, "http://blah.com", "")
+		s := fmt.Sprintf(minimalNonBootstrapTemplate, cltest.NewEIP55Address(), key.PeerID(), transmitterAddress.Hex(), kb.ID(), "http://blah.com", "")
 		os, err = offchainreporting.ValidatedOracleSpecToml(config.Config, s)
 		require.NoError(t, err)
 		err = toml.Unmarshal([]byte(s), &os)
@@ -558,9 +558,9 @@ ds1 -> ds1_parse;
 		keyStore := cltest.NewKeyStore(t, db).OCR()
 		key, err := keyStore.GenerateP2PKey()
 		require.NoError(t, err)
-		kb, _, err := keyStore.GenerateEncryptedOCRKeyBundle()
+		kb, err := keyStore.GenerateOCRKey()
 		require.NoError(t, err)
-		spec := fmt.Sprintf(ocrJobSpecTemplate, cltest.NewAddress().Hex(), key.PeerID(), kb.ID, transmitterAddress.Hex(), fmt.Sprintf(simpleFetchDataSourceTemplate, "blah", true))
+		spec := fmt.Sprintf(ocrJobSpecTemplate, cltest.NewAddress().Hex(), key.PeerID(), kb.ID(), transmitterAddress.Hex(), fmt.Sprintf(simpleFetchDataSourceTemplate, "blah", true))
 		dbSpec := makeOCRJobSpecFromToml(t, db, spec)
 
 		// Create an OCR job

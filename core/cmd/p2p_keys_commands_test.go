@@ -61,9 +61,7 @@ func TestClient_ListP2PKeys(t *testing.T) {
 	t.Parallel()
 
 	app := startNewApplication(t)
-	key, err := p2pkey.NewV2()
-	require.NoError(t, err)
-	err = app.GetKeyStore().OCR().UpsertEncryptedP2PKey(&key)
+	key, err := app.GetKeyStore().OCR().GenerateP2PKey()
 	require.NoError(t, err)
 
 	requireP2PKeyCount(t, app, 2) // Created  + fixture key
@@ -97,9 +95,7 @@ func TestClient_DeleteP2PKey(t *testing.T) {
 	app := startNewApplication(t)
 	client, _ := app.NewClientAndRenderer()
 
-	key, err := p2pkey.NewV2()
-	require.NoError(t, err)
-	err = app.GetKeyStore().OCR().UpsertEncryptedP2PKey(&key)
+	key, err := app.GetKeyStore().OCR().GenerateP2PKey()
 	require.NoError(t, err)
 
 	requireP2PKeyCount(t, app, 2) // Created  + fixture key

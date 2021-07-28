@@ -1802,7 +1802,7 @@ func setupOCRContracts(t *testing.T) (*bind.TransactOpts, *backends.SimulatedBac
 	return owner, b, ocrContractAddress, ocrContract
 }
 
-func setupNode(t *testing.T, owner *bind.TransactOpts, port int, dbName string, b *backends.SimulatedBackend) (*cltest.TestApplication, string, common.Address, ocrkey.EncryptedKeyBundle, func()) {
+func setupNode(t *testing.T, owner *bind.TransactOpts, port int, dbName string, b *backends.SimulatedBackend) (*cltest.TestApplication, string, common.Address, ocrkey.KeyV2, func()) {
 	config, _, ormCleanup := heavyweight.FullTestORM(t, fmt.Sprintf("%s%d", dbName, port), true)
 	config.Dialect = dialects.PostgresWithoutLock
 	app, appCleanup := cltest.NewApplicationWithConfigAndKeyOnSimulatedBlockchain(t, config, b)
@@ -1834,9 +1834,9 @@ func setupNode(t *testing.T, owner *bind.TransactOpts, port int, dbName string, 
 	require.NoError(t, err)
 	b.Commit()
 
-	_, kb, err := app.GetKeyStore().OCR().GenerateEncryptedOCRKeyBundle()
+	key, err := app.GetKeyStore().OCR().GenerateOCRKey()
 	require.NoError(t, err)
-	return app, peerID, transmitter, kb, func() {
+	return app, peerID, transmitter, key, func() {
 		ormCleanup()
 		appCleanup()
 	}
@@ -1855,11 +1855,11 @@ func TestIntegration_OCR(t *testing.T) {
 	var (
 		oracles      []confighelper.OracleIdentityExtra
 		transmitters []common.Address
-		kbs          []ocrkey.EncryptedKeyBundle
+		keys         []ocrkey.KeyV2
 		apps         []*cltest.TestApplication
 	)
 	for i := 0; i < 4; i++ {
-		app, peerID, transmitter, kb, cleanup := setupNode(t, owner, 20000+i, fmt.Sprintf("oracle%d", i), b)
+		app, peerID, transmitter, key, cleanup := setupNode(t, owner, 20000+i, fmt.Sprintf("oracle%d", i), b)
 		defer cleanup()
 		// We want to quickly poll for the bootstrap node to come up, but if we poll too quickly
 		// we'll flood it with messages and slow things down. 5s is about how long it takes the
@@ -1868,18 +1868,18 @@ func TestIntegration_OCR(t *testing.T) {
 		// GracePeriod < ObservationTimeout
 		app.Config.Set("OCR_OBSERVATION_GRACE_PERIOD", "100ms")
 
-		kbs = append(kbs, kb)
+		keys = append(keys, key)
 		apps = append(apps, app)
 		transmitters = append(transmitters, transmitter)
 
 		oracles = append(oracles, confighelper.OracleIdentityExtra{
 			OracleIdentity: confighelper.OracleIdentity{
-				OnChainSigningAddress: ocrtypes.OnChainSigningAddress(kb.OnChainSigningAddress),
+				OnChainSigningAddress: ocrtypes.OnChainSigningAddress(key.OnChainSigning.Address()),
 				TransmitAddress:       transmitter,
-				OffchainPublicKey:     ocrtypes.OffchainPublicKey(kb.OffChainPublicKey),
+				OffchainPublicKey:     ocrtypes.OffchainPublicKey(key.PublicKeyOffChain()),
 				PeerID:                peerID,
 			},
-			SharedSecretEncryptionPublicKey: ocrtypes.SharedSecretEncryptionPublicKey(kb.ConfigPublicKey),
+			SharedSecretEncryptionPublicKey: ocrtypes.SharedSecretEncryptionPublicKey(key.PublicKeyConfig()),
 		})
 	}
 
@@ -2003,7 +2003,7 @@ observationSource = """
 
 	answer1 [type=median index=0];
 """
-`, ocrContractAddress, bootstrapPeerID, kbs[i].ID, transmitters[i], fmt.Sprintf("bridge%d", i), i, slowServers[i].URL, i))
+`, ocrContractAddress, bootstrapPeerID, keys[i].ID(), transmitters[i], fmt.Sprintf("bridge%d", i), i, slowServers[i].URL, i))
 		require.NoError(t, err)
 		jb, err := apps[i].AddJobV2(context.Background(), ocrJob, null.NewString("testocr", true))
 		require.NoError(t, err)

@@ -34,12 +34,12 @@ func (ocrkc *OCRKeysController) Index(c *gin.Context) {
 // Example:
 // "POST <application>/keys/ocr"
 func (ocrkc *OCRKeysController) Create(c *gin.Context) {
-	_, ekb, err := ocrkc.App.GetKeyStore().OCR().GenerateEncryptedOCRKeyBundle()
+	key, err := ocrkc.App.GetKeyStore().OCR().GenerateOCRKey()
 	if err != nil {
 		jsonAPIError(c, http.StatusInternalServerError, err)
 		return
 	}
-	jsonAPIResponse(c, presenters.NewOCRKeysBundleResource(ekb), "offChainReportingKeyBundle")
+	jsonAPIResponse(c, presenters.NewOCRKeysBundleResource(key), "offChainReportingKeyBundle")
 }
 
 // Delete an OCR key bundle
@@ -57,12 +57,12 @@ func (ocrkc *OCRKeysController) Delete(c *gin.Context) {
 		}
 	}
 
-	id, err := models.Sha256HashFromHex(c.Param("keyID"))
+	id := c.Param("keyID")
 	if err != nil {
 		jsonAPIError(c, http.StatusUnprocessableEntity, err)
 		return
 	}
-	ekb, err := ocrkc.App.GetKeyStore().OCR().FindEncryptedOCRKeyBundleByID(id)
+	ekb, err := ocrkc.App.GetKeyStore().OCR().GetOCRKey(id)
 	if err != nil {
 		jsonAPIError(c, http.StatusNotFound, err)
 		return

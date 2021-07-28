@@ -23,8 +23,6 @@ func FromEncryptedJSON(keyJSON []byte, password string) (KeyV2, error) {
 	return Raw(privKey).Key(), nil
 }
 
-// EncryptedP2PKeyExport represents the structure of P2P keys exported and imported
-// to/from the disk
 type EncryptedP2PKeyExport struct {
 	KeyType   string              `json:"keyType"`
 	PublicKey string              `json:"publicKey"`
@@ -40,7 +38,7 @@ func (key KeyV2) ToEncryptedJSON(password string, scryptParams utils.ScryptParam
 		scryptParams.P,
 	)
 	if err != nil {
-		return nil, errors.Wrapf(err, "could not encrypt Eth key")
+		return nil, errors.Wrapf(err, "could not encrypt P2P key")
 	}
 	rawPubKey, err := key.GetPublic().Bytes()
 	if err != nil {

@@ -9,8 +9,8 @@ import (
 	"log"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/crypto/secp256k1"
 	"github.com/pkg/errors"
-	"github.com/smartcontractkit/chainlink/core/store/models"
 	"github.com/smartcontractkit/chainlink/core/utils"
 	ocrtypes "github.com/smartcontractkit/libocr/offchainreporting/types"
 	"golang.org/x/crypto/curve25519"
@@ -18,37 +18,43 @@ import (
 
 // type ID string
 
-type Raw struct {
-	EcdsaD             big.Int
-	Ed25519PrivKey     []byte
-	OffChainEncryption [curve25519.ScalarSize]byte
-}
+type Raw []byte
+
+var (
+	ErrScalarTooBig = errors.Errorf("can't handle scalars greater than %d", curve25519.PointSize)
+	curve           = secp256k1.S256()
+)
 
 // TODO - RYAN - Rehydrate() ?
 func (rawKey Raw) Key() (key KeyV2) {
-	ecdsaDSize := len(rawKey.EcdsaD.Bytes())
-	if ecdsaDSize > curve25519.PointSize {
-		panic(errors.Wrapf(ErrScalarTooBig, "got %d byte ecdsa scalar", ecdsaDSize))
-	}
+	ecdsaD := big.NewInt(0).SetBytes(rawKey[:32])
+	var ed25519PrivKey []byte = rawKey[32:96]
+	var offChainEncryption [32]byte
+	copy(offChainEncryption[:], rawKey[96:])
+	// var D []byte = rawKey[:32]
+
+	// ecdsaDSize := len(rawKey.EcdsaD.Bytes())
+	// if ecdsaDSize > curve25519.PointSize {
+	// 	panic(errors.Wrapf(ErrScalarTooBig, "got %d byte ecdsa scalar", ecdsaDSize))
+	// }
 
 	publicKey := ecdsa.PublicKey{Curve: curve}
-	publicKey.X, publicKey.Y = curve.ScalarBaseMult(rawKey.EcdsaD.Bytes())
+	publicKey.X, publicKey.Y = curve.ScalarBaseMult(ecdsaD.Bytes())
 	privateKey := ecdsa.PrivateKey{
 		PublicKey: publicKey,
-		D:         &rawKey.EcdsaD,
+		D:         ecdsaD,
 	}
 	OnChainSigning := onChainPrivateKey(privateKey)
-	OffChainSigning := offChainPrivateKey(rawKey.Ed25519PrivKey)
+	OffChainSigning := offChainPrivateKey(ed25519PrivKey)
 	key.OnChainSigning = &OnChainSigning
 	key.OffChainSigning = &OffChainSigning
-	key.OffChainEncryption = &rawKey.OffChainEncryption
+	key.OffChainEncryption = &offChainEncryption
 	// key.ID = generateID(&key)
 	return key
 }
 
 // TODO - RYAN - check that all KeyV2 structs contain pointers to privKey material
 type KeyV2 struct {
-	// ID                 ID
 	OnChainSigning     *onChainPrivateKey
 	OffChainSigning    *offChainPrivateKey
 	OffChainEncryption *[curve25519.ScalarSize]byte
@@ -75,42 +81,36 @@ func NewV2() (KeyV2, error) {
 		OffChainSigning:    (*offChainPrivateKey)(&offChainPriv),
 		OffChainEncryption: &encryptionPriv,
 	}
-	// k.ID = generateID(&k)
 	return k, nil
 }
 
 func (key KeyV2) ID() string {
-	bytes := utils.ConcatBytes(
-		(*ecdsa.PrivateKey)(key.OnChainSigning).D.Bytes(),
-		[]byte(*key.OffChainSigning),
-		key.OffChainEncryption[:],
-	)
-	sha := sha256.Sum256(bytes)
+	sha := sha256.Sum256(key.Raw())
 	return hex.EncodeToString(sha[:])
 }
 
 func (key KeyV2) Raw() Raw {
-	return Raw{
-		EcdsaD:             *key.OnChainSigning.D,
-		Ed25519PrivKey:     []byte(*key.OffChainSigning),
-		OffChainEncryption: *key.OffChainEncryption,
-	}
+	return utils.ConcatBytes(
+		key.OnChainSigning.D.Bytes(),
+		[]byte(*key.OffChainSigning),
+		key.OffChainEncryption[:],
+	)
 }
 
-func (key KeyV2) ToKeyV1() KeyBundle {
-	id := models.Sha256Hash{}
-	idBytes, err := hex.DecodeString(key.ID())
-	copy(id[:], idBytes)
-	if err != nil {
-		panic(errors.Wrap(err, "could not decode OCR key id bytes"))
-	}
-	return KeyBundle{
-		ID:                 id,
-		onChainSigning:     key.OnChainSigning,
-		offChainSigning:    key.OffChainSigning,
-		offChainEncryption: key.OffChainEncryption,
-	}
-}
+// func (key KeyV2) ToKeyV1() KeyBundle {
+// 	id := models.Sha256Hash{}
+// 	idBytes, err := hex.DecodeString(key.ID())
+// 	copy(id[:], idBytes)
+// 	if err != nil {
+// 		panic(errors.Wrap(err, "could not decode OCR key id bytes"))
+// 	}
+// 	return KeyBundle{
+// 		ID:                 id,
+// 		onChainSigning:     key.OnChainSigning,
+// 		offChainSigning:    key.OffChainSigning,
+// 		offChainEncryption: key.OffChainEncryption,
+// 	}
+// }
 
 // SignOnChain returns an ethereum-style ECDSA secp256k1 signature on msg.
 func (pk *KeyV2) SignOnChain(msg []byte) (signature []byte, err error) {
@@ -136,6 +136,7 @@ func (pk *KeyV2) ConfigDiffieHellman(base *[curve25519.PointSize]byte) (
 	return sharedPoint, nil
 }
 
+// TODO - RYAN - these function names suck
 // PublicKeyAddressOnChain returns public component of the keypair used in
 // SignOnChain
 func (pk *KeyV2) PublicKeyAddressOnChain() ocrtypes.OnChainSigningAddress {

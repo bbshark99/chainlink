@@ -34,28 +34,19 @@ func (p *OCRKeyBundlePresenter) RenderTable(rt RendererTable) error {
 }
 
 func (p *OCRKeyBundlePresenter) ToRow() []string {
-	var deletedAt string
-	if p.DeletedAt != nil {
-		deletedAt = p.DeletedAt.String()
-	}
-	row := []string{
+	return []string{
 		p.ID,
 		p.OnChainSigningAddress.String(),
 		p.OffChainPublicKey.String(),
 		p.ConfigPublicKey.String(),
-		p.CreatedAt.String(),
-		p.UpdatedAt.String(),
-		deletedAt,
 	}
-
-	return row
 }
 
 type OCRKeyBundlePresenters []OCRKeyBundlePresenter
 
 // RenderTable implements TableRenderer
 func (ps OCRKeyBundlePresenters) RenderTable(rt RendererTable) error {
-	headers := []string{"ID", "On-chain signing addr", "Off-chain pubkey", "Config pubkey", "Created", "Updated", "Deleted"}
+	headers := []string{"ID", "On-chain signing addr", "Off-chain pubkey", "Config pubkey"}
 	rows := [][]string{}
 
 	for _, p := range ps {
