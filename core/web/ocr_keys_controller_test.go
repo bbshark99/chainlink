@@ -16,7 +16,7 @@ import (
 // func TestOCRKeysController_Index_HappyPath(t *testing.T) {
 // 	client, OCRKeyStore := setupOCRKeysControllerTests(t)
 
-// 	keys, _ := OCRKeyStore.FindEncryptedOCRKeyBundles()
+// 	keys, _ := OCRKeyStore.GetOCRKeys()
 
 // 	response, cleanup := client.Get("/v2/keys/ocr")
 // 	t.Cleanup(cleanup)
@@ -36,14 +36,14 @@ import (
 // func TestOCRKeysController_Create_HappyPath(t *testing.T) {
 // 	client, OCRKeyStore := setupOCRKeysControllerTests(t)
 
-// 	keys, _ := OCRKeyStore.FindEncryptedOCRKeyBundles()
+// 	keys, _ := OCRKeyStore.GetOCRKeys()
 // 	initialLength := len(keys)
 
 // 	response, cleanup := client.Post("/v2/keys/ocr", nil)
 // 	t.Cleanup(cleanup)
 // 	cltest.AssertServerResponse(t, response, http.StatusOK)
 
-// 	keys, _ = OCRKeyStore.FindEncryptedOCRKeyBundles()
+// 	keys, _ = OCRKeyStore.GetOCRKeys()
 // 	require.Len(t, keys, initialLength+1)
 
 // 	resource := presenters.OCRKeysBundleResource{}
@@ -83,7 +83,7 @@ func TestOCRKeysController_Delete_NonExistentOCRKeyID(t *testing.T) {
 func TestOCRKeysController_Delete_HappyPath(t *testing.T) {
 	client, OCRKeyStore := setupOCRKeysControllerTests(t)
 
-	keys, _ := OCRKeyStore.FindEncryptedOCRKeyBundles()
+	keys, _ := OCRKeyStore.GetOCRKeys()
 	initialLength := len(keys)
 	key, _ := OCRKeyStore.GenerateOCRKey()
 
@@ -92,7 +92,7 @@ func TestOCRKeysController_Delete_HappyPath(t *testing.T) {
 	assert.Equal(t, http.StatusOK, response.StatusCode)
 	assert.Error(t, utils.JustError(OCRKeyStore.GetOCRKey(key.ID())))
 
-	keys, _ = OCRKeyStore.FindEncryptedOCRKeyBundles()
+	keys, _ = OCRKeyStore.GetOCRKeys()
 	assert.Equal(t, initialLength, len(keys))
 }
 

@@ -219,7 +219,7 @@ package cmd
 // 		}
 // 	}
 
-// 	ocrkeys, err := ocrKeyStore.FindEncryptedOCRKeyBundles()
+// 	ocrkeys, err := ocrKeyStore.GetOCRKeys()
 // 	if err != nil {
 // 		return errors.Wrap(err, "could not fetch encrypted OCR keys from database")
 // 	}

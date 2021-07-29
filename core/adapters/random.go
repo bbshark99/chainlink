@@ -87,7 +87,7 @@ func (ra *Random) Perform(input models.RunInput, store *store.Store, keyStore ke
 	if err != nil {
 		return models.NewRunOutputError(err)
 	}
-	solidityProof, err := proof.GenerateProofResponse(keyStore.VRF(), key, i)
+	solidityProof, err := proof.GenerateProofResponse(keyStore.VRF(), key.String(), i)
 	if err != nil {
 		return models.NewRunOutputError(err)
 	}

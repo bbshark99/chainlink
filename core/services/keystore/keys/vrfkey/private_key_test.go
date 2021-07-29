@@ -24,5 +24,5 @@ func TestPrintingDoesNotLeakKey(t *testing.T) {
 	assert.Regexp(t, pkr, v)
 	assert.NotContains(t, v, fmt.Sprintf("%x", sk))
 	// Other verbs just give the corresponding encoding of .String()
-	assert.Equal(t, fmt.Sprintf("%x", k), hex.EncodeToString([]byte(v)))
+	assert.Equal(t, fmt.Sprintf("%d", k), hex.EncodeToString([]byte(v)))
 }

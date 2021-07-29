@@ -8,7 +8,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/smartcontractkit/chainlink/core/services/keystore"
 	"github.com/smartcontractkit/chainlink/core/services/keystore/keys/vrfkey"
-	"github.com/smartcontractkit/chainlink/core/services/signatures/secp256k1"
 	"github.com/smartcontractkit/chainlink/core/utils"
 )
 
@@ -96,10 +95,10 @@ func GenerateProofResponseFromProof(proof vrfkey.Proof, s PreSeedData) (Marshale
 	return rv, nil
 }
 
-func GenerateProofResponse(keystore keystore.VRF, key secp256k1.PublicKey, s PreSeedData) (
+func GenerateProofResponse(keystore keystore.VRF, id string, s PreSeedData) (
 	MarshaledOnChainResponse, error) {
 	seed := FinalSeed(s)
-	proof, err := keystore.GenerateProof(key, seed)
+	proof, err := keystore.GenerateProof(id, seed)
 	if err != nil {
 		return MarshaledOnChainResponse{}, err
 	}

@@ -89,7 +89,7 @@ func TestClient_CreateOCRKeyBundle(t *testing.T) {
 
 	require.NoError(t, client.CreateOCRKeyBundle(nilContext))
 
-	keys, err := app.GetKeyStore().OCR().FindEncryptedOCRKeyBundles()
+	keys, err := app.GetKeyStore().OCR().GetOCRKeys()
 	require.NoError(t, err)
 	require.Len(t, keys, 2)
 
@@ -122,7 +122,7 @@ func TestClient_DeleteOCRKeyBundle(t *testing.T) {
 	assert.Equal(t, key.ID(), output.ID)
 }
 
-func TestClient_ImportExportOCRKeyBundle(t *testing.T) {
+func TestClient_ImportExportOCRKey(t *testing.T) {
 	defer deleteKeyExportFile(t)
 
 	app := startNewApplication(t)
@@ -152,7 +152,7 @@ func TestClient_ImportExportOCRKeyBundle(t *testing.T) {
 	require.NoError(t, client.ExportOCRKey(c))
 	require.NoError(t, utils.JustError(os.Stat(keyName)))
 
-	require.NoError(t, app.GetKeyStore().OCR().DeleteOCRKey(&key))
+	require.NoError(t, app.GetKeyStore().OCR().DeleteOCRKey(key.ID()))
 	requireOCRKeyCount(t, app, 0)
 
 	set = flag.NewFlagSet("test OCR import", 0)
@@ -169,7 +169,7 @@ func TestClient_ImportExportOCRKeyBundle(t *testing.T) {
 }
 
 func requireOCRKeyCount(t *testing.T, app chainlink.Application, length int) []ocrkey.KeyV2 {
-	keys, err := app.GetKeyStore().OCR().FindEncryptedOCRKeyBundles()
+	keys, err := app.GetKeyStore().OCR().GetOCRKeys()
 	require.NoError(t, err)
 	require.Len(t, keys, length)
 	return keys

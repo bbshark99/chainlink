@@ -29,7 +29,7 @@ import (
 func registerExistingProvingKey(
 	t *testing.T,
 	coordinator coordinatorUniverse,
-	provingKey *vrfkey.PrivateKey,
+	provingKey *vrfkey.KeyV2,
 	jobID models.JobID,
 	vrfFee *big.Int,
 ) {
@@ -58,11 +58,11 @@ func TestIntegration_RandomnessRequest(t *testing.T) {
 	pk, err := secp256k1.NewPublicKeyFromHex(rawKey)
 	require.NoError(t, err)
 	var sk int64 = 1
-	provingKey := vrfkey.NewPrivateKeyXXXTestingOnly(big.NewInt(sk))
+	provingKey := vrfkey.MustNewV2XXXTestingOnly(big.NewInt(sk))
 	require.Equal(t, provingKey.PublicKey, pk,
 		"public key in fixture %s does not match secret key in test %d (which has "+
 			"public key %s)", pk, sk, provingKey.PublicKey.String())
-	app.KeyStore.VRF().StoreInMemoryXXXTestingOnly(provingKey)
+	app.KeyStore.VRF().StoreInMemoryXXXTestingOnly(&provingKey)
 	var seed = big.NewInt(1)
 
 	j := cltest.NewJobWithRandomnessLog()
@@ -82,7 +82,7 @@ func TestIntegration_RandomnessRequest(t *testing.T) {
 	}}
 
 	j = cltest.CreateJobSpecViaWeb(t, app, j)
-	registerExistingProvingKey(t, cu, provingKey, j.ID, vrfFee)
+	registerExistingProvingKey(t, cu, &provingKey, j.ID, vrfFee)
 	r := requestRandomness(t, cu, provingKey.PublicKey.MustHash(), big.NewInt(100))
 
 	cltest.WaitForRuns(t, j, app.Store, 1)
@@ -149,11 +149,11 @@ func TestIntegration_SharedProvingKey(t *testing.T) {
 	pk, err := secp256k1.NewPublicKeyFromHex(rawKey)
 	require.NoError(t, err)
 	var sk int64 = 1
-	provingKey := vrfkey.NewPrivateKeyXXXTestingOnly(big.NewInt(sk))
+	provingKey := vrfkey.MustNewV2XXXTestingOnly(big.NewInt(sk))
 	require.Equal(t, provingKey.PublicKey, pk,
 		"public key in fixture %s does not match secret key in test %d (which has "+
 			"public key %s)", pk, sk, provingKey.PublicKey.String())
-	app.KeyStore.VRF().StoreInMemoryXXXTestingOnly(provingKey)
+	app.KeyStore.VRF().StoreInMemoryXXXTestingOnly(&provingKey)
 
 	j := cltest.NewJobWithRandomnessLog()
 	contractAddress := cu.rootContractAddress.String()
@@ -172,7 +172,7 @@ func TestIntegration_SharedProvingKey(t *testing.T) {
 	}}
 
 	j = cltest.CreateJobSpecViaWeb(t, app, j)
-	registerExistingProvingKey(t, cu, provingKey, j.ID, vrfFee)
+	registerExistingProvingKey(t, cu, &provingKey, j.ID, vrfFee)
 
 	// trigger job run by requesting randomness
 	log := requestRandomness(t, cu, provingKey.PublicKey.MustHash(), big.NewInt(100))

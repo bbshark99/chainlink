@@ -1,6 +1,7 @@
 package keystore
 
 import (
+	"fmt"
 	"math/big"
 
 	"github.com/pkg/errors"
@@ -19,20 +20,15 @@ var ErrMatchingVRFKey = errors.New(
 var ErrAttemptToDeleteNonExistentKeyFromDB = errors.New("key is not present in DB")
 
 type VRF interface {
-	GenerateProof(k secp256k1.PublicKey, seed *big.Int) (vrfkey.Proof, error)
-	Forget(k secp256k1.PublicKey) error
-	CreateKey() (secp256k1.PublicKey, error)
-	CreateAndUnlockWeakInMemoryEncryptedKeyXXXTestingOnly(phrase string) (*vrfkey.EncryptedVRFKey, error)
-	Store(key *vrfkey.PrivateKey, phrase string, scryptParams utils.ScryptParams) error
-	StoreInMemoryXXXTestingOnly(key *vrfkey.PrivateKey)
-	Archive(key secp256k1.PublicKey) (err error)
-	Delete(key secp256k1.PublicKey) (err error)
-	Import(keyjson []byte, auth string) (vrfkey.EncryptedVRFKey, error)
-	Export(pk secp256k1.PublicKey, newPassword string) ([]byte, error)
-	Get(k ...secp256k1.PublicKey) ([]*vrfkey.EncryptedVRFKey, error)
-	GetSpecificKey(k secp256k1.PublicKey) (*vrfkey.EncryptedVRFKey, error)
-	ListKeys() (publicKeys []*secp256k1.PublicKey, err error)
-	ListKeysIncludingArchived() (publicKeys []*secp256k1.PublicKey, err error)
+	GenerateProof(id string, seed *big.Int) (vrfkey.Proof, error)
+	CreateKey() (*vrfkey.KeyV2, error)
+	Store(key *vrfkey.KeyV2, phrase string, scryptParams utils.ScryptParams) error
+	StoreInMemoryXXXTestingOnly(key *vrfkey.KeyV2)
+	Delete(id string) (err error)
+	Import(keyjson []byte, auth string) (*vrfkey.KeyV2, error)
+	Export(id string, password string) ([]byte, error)
+	Get(id string) (*vrfkey.KeyV2, error)
+	GetAll() ([]vrfkey.KeyV2, error)
 }
 
 type vrf struct {
@@ -47,58 +43,122 @@ func newVRFKeyStore(km *keyManager) vrf {
 	}
 }
 
-func (ks vrf) GenerateProof(k secp256k1.PublicKey, seed *big.Int) (vrfkey.Proof, error) {
-	return vrfkey.Proof{}, nil
+func (ks vrf) GenerateProof(id string, seed *big.Int) (vrfkey.Proof, error) {
+	ks.lock.RLock()
+	defer ks.lock.RUnlock()
+	if ks.isLocked() {
+		return vrfkey.Proof{}, LockedErr
+	}
+	key, err := ks.getVRFKey(id)
+	if err != nil {
+		return vrfkey.Proof{}, err
+	}
+	return key.GenerateProof(seed)
 }
 
-func (ks vrf) Forget(k secp256k1.PublicKey) error {
-	return nil
+func (ks vrf) CreateKey() (*vrfkey.KeyV2, error) {
+	ks.lock.Lock()
+	defer ks.lock.Unlock()
+	if ks.isLocked() {
+		return nil, LockedErr
+	}
+	key, err := vrfkey.NewV2()
+	if err != nil {
+		return nil, errors.Wrapf(err, "while generating new vrf key")
+	}
+	err = ks.safeAddKey(key)
+	if err != nil {
+		return nil, errors.Wrapf(err, "while adding new vrf key")
+	}
+	return &key, nil
 }
 
-func (ks vrf) CreateKey() (secp256k1.PublicKey, error) {
-	return secp256k1.PublicKey{}, nil
-}
-
-func (ks vrf) CreateAndUnlockWeakInMemoryEncryptedKeyXXXTestingOnly(phrase string) (*vrfkey.EncryptedVRFKey, error) {
+func (ks vrf) CreateAndUnlockWeakInMemoryEncryptedKeyXXXTestingOnly(phrase string) (*vrfkey.KeyV2, error) {
 	return nil, nil
 }
 
-func (ks vrf) Store(key *vrfkey.PrivateKey, phrase string, scryptParams utils.ScryptParams) error {
+func (ks vrf) Store(key *vrfkey.KeyV2, phrase string, scryptParams utils.ScryptParams) error {
 	return nil
 }
 
-func (ks vrf) StoreInMemoryXXXTestingOnly(key *vrfkey.PrivateKey) {
-
+func (ks vrf) StoreInMemoryXXXTestingOnly(key *vrfkey.KeyV2) {
+	ks.keyRing.VRF[key.ID()] = *key
 }
 
-func (ks vrf) Archive(key secp256k1.PublicKey) (err error) {
-	return nil
+func (ks vrf) Delete(id string) (err error) {
+	ks.lock.RLock()
+	defer ks.lock.RUnlock()
+	if ks.isLocked() {
+		return LockedErr
+	}
+	key, err := ks.Get(id)
+	if err != nil {
+		return err
+	}
+	return ks.safeRemoveKey(key)
+	// TODO - RYAN
+	// return ks.safeRemoveKey("VRF", id)
 }
 
-func (ks vrf) Delete(key secp256k1.PublicKey) (err error) {
-	return nil
+func (ks vrf) Import(keyJSON []byte, password string) (*vrfkey.KeyV2, error) {
+	ks.lock.Lock()
+	defer ks.lock.Unlock()
+	if ks.isLocked() {
+		return nil, LockedErr
+	}
+	key, err := vrfkey.FromEncryptedJSON(keyJSON, password)
+	if err != nil {
+		return nil, errors.Wrap(err, "VRFKeyStore#ImportKey failed to decrypt key")
+	}
+	return &key, ks.safeAddKey(key)
 }
 
-func (ks vrf) Import(keyjson []byte, auth string) (vrfkey.EncryptedVRFKey, error) {
-	return vrfkey.EncryptedVRFKey{}, nil
+func (ks vrf) Export(id string, password string) ([]byte, error) {
+	ks.lock.RLock()
+	defer ks.lock.RUnlock()
+	if ks.isLocked() {
+		return nil, LockedErr
+	}
+	key, err := ks.Get(id)
+	if err != nil {
+		return nil, err
+	}
+	return key.ToEncryptedJSON(password, ks.scryptParams)
 }
 
-func (ks vrf) Export(pk secp256k1.PublicKey, newPassword string) ([]byte, error) {
-	return []byte{}, nil
+func (ks vrf) Get(id string) (*vrfkey.KeyV2, error) {
+	ks.lock.RLock()
+	defer ks.lock.RUnlock()
+	if ks.isLocked() {
+		return nil, LockedErr
+	}
+	key, found := ks.keyRing.VRF[id]
+	if !found {
+		return nil, errors.New(fmt.Sprintf("OCR key not found with ID %s", id))
+	}
+	return &key, nil
 }
 
-func (ks vrf) Get(k ...secp256k1.PublicKey) ([]*vrfkey.EncryptedVRFKey, error) {
-	return []*vrfkey.EncryptedVRFKey{}, nil
+func (ks vrf) GetAll() (keys []vrfkey.KeyV2, _ error) {
+	ks.lock.RLock()
+	defer ks.lock.RUnlock()
+	if ks.isLocked() {
+		return keys, LockedErr
+	}
+	for _, key := range ks.keyRing.VRF {
+		keys = append(keys, key)
+	}
+	return keys, nil
 }
 
-func (ks vrf) GetSpecificKey(k secp256k1.PublicKey) (*vrfkey.EncryptedVRFKey, error) {
+func (ks vrf) GetSpecificKey(k secp256k1.PublicKey) (*vrfkey.KeyV2, error) {
 	return nil, nil
 }
 
-func (ks vrf) ListKeys() (publicKeys []*secp256k1.PublicKey, err error) {
-	return nil, nil
-}
-
-func (ks vrf) ListKeysIncludingArchived() (publicKeys []*secp256k1.PublicKey, err error) {
-	return nil, nil
+func (ks vrf) getVRFKey(id string) (vrfkey.KeyV2, error) {
+	key, found := ks.keyRing.VRF[id]
+	if !found {
+		return vrfkey.KeyV2{}, errors.New(fmt.Sprintf("VRF key not found with ID %s", id))
+	}
+	return key, nil
 }

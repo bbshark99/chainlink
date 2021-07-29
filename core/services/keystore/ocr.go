@@ -47,7 +47,7 @@ package keystore
 
 // 	p2pkeys, err := ks.GetP2PKeys()
 // 	errs = multierr.Append(errs, err)
-// 	ocrkeys, err := ks.FindEncryptedOCRKeyBundles()
+// 	ocrkeys, err := ks.GetOCRKeys()
 // 	errs = multierr.Append(errs, err)
 
 // 	for _, ek := range p2pkeys {
@@ -215,7 +215,7 @@ package keystore
 // }
 
 // // FindEncryptedOCRKeyBundles finds all the encrypted OCR key records
-// func (ks *ocr) FindEncryptedOCRKeyBundles() (keys []ocrkey.EncryptedKeyBundle, err error) {
+// func (ks *ocr) GetOCRKeys() (keys []ocrkey.EncryptedKeyBundle, err error) {
 // 	err = ks.Order("created_at asc, id asc").Find(&keys).Error
 // 	return keys, err
 // }
@@ -300,8 +300,8 @@ package keystore
 // 	return encryptedExport, nil
 // }
 
-// // ImportOCRKeyBundle imports an OCR key bundle to the database
-// func (ks *ocr) ImportOCRKeyBundle(keyJSON []byte, oldPassword string) (*ocrkey.EncryptedKeyBundle, error) {
+// // ImportOCRKey imports an OCR key bundle to the database
+// func (ks *ocr) ImportOCRKey(keyJSON []byte, oldPassword string) (*ocrkey.EncryptedKeyBundle, error) {
 // 	ks.mu.Lock()
 // 	defer ks.mu.Unlock()
 
@@ -327,8 +327,8 @@ package keystore
 // 	return encryptedKey, nil
 // }
 
-// // ExportOCRKeyBundle exports an OCR key bundle from the database
-// func (ks *ocr) ExportOCRKeyBundle(id models.Sha256Hash, newPassword string) ([]byte, error) {
+// // ExportOCRKey exports an OCR key bundle from the database
+// func (ks *ocr) ExportOCRKey(id models.Sha256Hash, newPassword string) ([]byte, error) {
 // 	ks.mu.Lock()
 // 	defer ks.mu.Unlock()
 

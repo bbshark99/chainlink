@@ -1,7 +1,6 @@
 package proof_test
 
 import (
-	"fmt"
 	"math/big"
 	"testing"
 
@@ -17,6 +16,7 @@ import (
 	"github.com/smartcontractkit/chainlink/core/assets"
 	"github.com/smartcontractkit/chainlink/core/internal/cltest"
 	"github.com/smartcontractkit/chainlink/core/internal/gethwrappers/generated/solidity_vrf_verifier_wrapper"
+	"github.com/smartcontractkit/chainlink/core/services/keystore/keys/vrfkey"
 	"github.com/stretchr/testify/require"
 )
 
@@ -24,14 +24,13 @@ func TestMarshaledProof(t *testing.T) {
 	store, cleanup := cltest.NewStore(t)
 	defer cleanup()
 	keyStore := cltest.NewKeyStore(t, store.DB)
-	key, err := keyStore.VRF().CreateAndUnlockWeakInMemoryEncryptedKeyXXXTestingOnly(cltest.Password)
-	fmt.Println("key.PublicKey", key.PublicKey)
-	require.NoError(t, err)
+	key := vrfkey.MustNewV2XXXTestingOnly(big.NewInt(1))
+	keyStore.VRF().StoreInMemoryXXXTestingOnly(&key)
 	blockHash := common.Hash{}
 	blockNum := 0
 	preSeed := big.NewInt(1)
 	s := proof2.TestXXXSeedData(t, preSeed, blockHash, blockNum)
-	proofResponse, err := proof2.GenerateProofResponse(keyStore.VRF(), key.PublicKey, s)
+	proofResponse, err := proof2.GenerateProofResponse(keyStore.VRF(), key.ID(), s)
 	require.NoError(t, err)
 	goProof, err := proof2.UnmarshalProofResponse(proofResponse)
 	require.NoError(t, err)

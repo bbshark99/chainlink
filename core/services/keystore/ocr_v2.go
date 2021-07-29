@@ -16,16 +16,15 @@ type OCR interface {
 	GetP2PKeys() (keys []p2pkey.KeyV2, err error)
 	GetP2PKey(id string) (*p2pkey.KeyV2, error)
 	DeleteP2PKey(key *p2pkey.KeyV2) error
-	ImportP2PKey(keyJSON []byte, oldPassword string) (*p2pkey.KeyV2, error)
-	ExportP2PKey(id string, newPassword string) ([]byte, error)
+	ImportP2PKey(keyJSON []byte, password string) (*p2pkey.KeyV2, error)
+	ExportP2PKey(id string, password string) ([]byte, error)
 	// OCR Keys
 	GenerateOCRKey() (ocrkey.KeyV2, error)
-	UpsertEncryptedOCRKeyBundle(encryptedKey *ocrkey.KeyV2) error
-	FindEncryptedOCRKeyBundles() (keys []ocrkey.KeyV2, err error)
+	GetOCRKeys() ([]ocrkey.KeyV2, error)
 	GetOCRKey(id string) (ocrkey.KeyV2, error)
 	DeleteOCRKey(id string) error
-	ImportOCRKeyBundle(keyJSON []byte, oldPassword string) (*ocrkey.KeyV2, error)
-	ExportOCRKeyBundle(id models.Sha256Hash, newPassword string) ([]byte, error)
+	ImportOCRKey(keyJSON []byte, password string) (*ocrkey.KeyV2, error)
+	ExportOCRKey(id string, password string) ([]byte, error)
 }
 
 type ocr struct {
@@ -75,11 +74,7 @@ func (ks ocr) GetP2PKey(id string) (*p2pkey.KeyV2, error) {
 	if ks.isLocked() {
 		return nil, LockedErr
 	}
-	key, err := ks.getP2PKey(id)
-	if err != nil {
-		return nil, err
-	}
-	return key, nil
+	return ks.getP2PKey(id)
 }
 
 func (ks ocr) DeleteP2PKey(key *p2pkey.KeyV2) error {
@@ -154,12 +149,16 @@ func (ks ocr) GenerateOCRKey() (ocrkey.KeyV2, error) {
 	return key, nil
 }
 
-func (ks ocr) UpsertEncryptedOCRKeyBundle(encryptedKey *ocrkey.KeyV2) error {
-	return nil
-}
-
-func (ks ocr) FindEncryptedOCRKeyBundles() (keys []ocrkey.KeyV2, err error) {
-	return keys, err
+func (ks ocr) GetOCRKeys() (keys []ocrkey.KeyV2, err error) {
+	ks.lock.RLock()
+	defer ks.lock.RUnlock()
+	if ks.isLocked() {
+		return keys, LockedErr
+	}
+	for _, key := range ks.keyRing.OCR {
+		keys = append(keys, key)
+	}
+	return keys, nil
 }
 
 func (ks ocr) GetOCRKey(id string) (ocrkey.KeyV2, error) {
@@ -188,10 +187,28 @@ func (ks ocr) DeleteOCRKey(id string) error {
 	return ks.safeRemoveKey(key)
 }
 
-func (ks ocr) ImportOCRKeyBundle(keyJSON []byte, oldPassword string) (*ocrkey.KeyV2, error) {
-	return nil, nil
+func (ks ocr) ImportOCRKey(keyJSON []byte, password string) (*ocrkey.KeyV2, error) {
+	ks.lock.Lock()
+	defer ks.lock.Unlock()
+	if ks.isLocked() {
+		return nil, LockedErr
+	}
+	key, err := ocrkey.FromEncryptedJSON(keyJSON, password)
+	if err != nil {
+		return nil, errors.Wrap(err, "OCRKeyStore#ImportKey failed to decrypt key")
+	}
+	return &key, ks.safeAddKey(key)
 }
 
-func (ks ocr) ExportOCRKeyBundle(id models.Sha256Hash, newPassword string) ([]byte, error) {
-	return []byte{}, nil
+func (ks ocr) ExportOCRKey(id string, password string) ([]byte, error) {
+	ks.lock.RLock()
+	defer ks.lock.RUnlock()
+	if ks.isLocked() {
+		return nil, LockedErr
+	}
+	key, err := ks.GetOCRKey(id)
+	if err != nil {
+		return nil, err
+	}
+	return key.ToEncryptedJSON(password, ks.scryptParams)
 }

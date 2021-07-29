@@ -366,8 +366,9 @@ func TestORM_DeleteJob_DeletesAssociatedRecords(t *testing.T) {
 	})
 
 	t.Run("it deletes records for vrf jobs", func(t *testing.T) {
-		pk, err := keyStore.VRF().CreateKey()
+		key, err := keyStore.VRF().CreateKey()
 		require.NoError(t, err)
+		pk := key.PublicKey
 		jb, err := vrf.ValidatedVRFSpec(testspecs.GenerateVRFSpec(testspecs.VRFSpecParams{PublicKey: pk.String()}).Toml())
 		require.NoError(t, err)
 

@@ -164,7 +164,7 @@ func TestRequestIDMatches(t *testing.T) {
 
 var (
 	rawSecretKey = big.NewInt(1) // never do this in production!
-	secretKey    = vrfkey.NewPrivateKeyXXXTestingOnly(rawSecretKey)
+	secretKey    = vrfkey.MustNewV2XXXTestingOnly(rawSecretKey)
 	publicKey    = (&secp256k1.Secp256k1{}).Point().Mul(secp256k1.IntToScalar(
 		rawSecretKey), nil)
 	hardcodedSeed = big.NewInt(0)
