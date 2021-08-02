@@ -85,35 +85,9 @@ func (cli *Client) RunNode(c *clipkg.Context) error {
 
 	// TODO - RYAN - prompt for password here
 	var keyStorePwd string
-
-	if cli.Config.FeatureFastKeyStore() {
-		err := keyStore.Unlock(pwd)
-		if err != nil {
-			return cli.errorOut(fmt.Errorf("error authenticating keystore: %+v", err))
-		}
-	} else {
-		// TODO - Remove after keystore V1 is removed
-
-		// keyStorePwd, err := cli.KeyStoreAuthenticator.AuthenticateEthKey(keyStore.Eth(), pwd)
-		// if err != nil {
-		// 	return cli.errorOut(fmt.Errorf("error authenticating keystore: %+v", err))
-		// }
-
-		// if authErr := cli.KeyStoreAuthenticator.AuthenticateOCRKey(keyStore.OCR(), store.Config, keyStorePwd); authErr != nil {
-		// 	return cli.errorOut(errors.Wrapf(authErr, "while authenticating with OCR password"))
-		// }
-
-		// if len(c.String("vrfpassword")) != 0 {
-		// 	vrfpwd, fileErr := passwordFromFile(c.String("vrfpassword"))
-		// 	if fileErr != nil {
-		// 		return cli.errorOut(errors.Wrapf(fileErr,
-		// 			"error reading VRF password from vrfpassword file \"%s\"",
-		// 			c.String("vrfpassword")))
-		// 	}
-		// 	if authErr := cli.KeyStoreAuthenticator.AuthenticateVRFKey(keyStore.VRF(), vrfpwd); authErr != nil {
-		// 		return cli.errorOut(errors.Wrapf(authErr, "while authenticating with VRF password"))
-		// 	}
-		// }
+	err = keyStore.Unlock(pwd)
+	if err != nil {
+		return cli.errorOut(fmt.Errorf("error authenticating keystore: %+v", err))
 	}
 
 	var user models.User
@@ -627,19 +601,19 @@ func (cli *Client) SetNextNonce(c *clipkg.Context) error {
 // ImportKey imports a key to be used with the chainlink node
 // NOTE: This should not be run concurrently with a running chainlink node.
 // If you do run it concurrently, it will not take effect until the next reboot.
-func (cli *Client) ImportKey(c *clipkg.Context) error {
-	logger.SetLogger(cli.Config.CreateProductionLogger())
-	app, err := cli.AppFactory.NewApplication(cli.Config)
-	if err != nil {
-		return cli.errorOut(errors.Wrap(err, "creating application"))
-	}
+// func (cli *Client) ImportKey(c *clipkg.Context) error {
+// 	logger.SetLogger(cli.Config.CreateProductionLogger())
+// 	app, err := cli.AppFactory.NewApplication(cli.Config)
+// 	if err != nil {
+// 		return cli.errorOut(errors.Wrap(err, "creating application"))
+// 	}
 
-	if !c.Args().Present() {
-		return cli.errorOut(errors.New("Must pass in filepath to key"))
-	}
+// 	if !c.Args().Present() {
+// 		return cli.errorOut(errors.New("Must pass in filepath to key"))
+// 	}
 
-	srcKeyPath := c.Args().First() // e.g. ./keys/mykey
+// 	srcKeyPath := c.Args().First() // e.g. ./keys/mykey
 
-	_, err = app.GetKeyStore().Eth().ImportKeyFileToDB(srcKeyPath)
-	return cli.errorOut(err)
-}
+// 	_, err = app.GetKeyStore().Eth().ImportKeyFileToDB(srcKeyPath)
+// 	return cli.errorOut(err)
+// }

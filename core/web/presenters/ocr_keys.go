@@ -14,7 +14,7 @@ type OCRKeysBundleResource struct {
 
 // GetName implements the api2go EntityNamer interface
 func (r OCRKeysBundleResource) GetName() string {
-	return "encryptedKeyBundles"
+	return "keyV2s"
 }
 
 func NewOCRKeysBundleResource(key ocrkey.KeyV2) *OCRKeysBundleResource {

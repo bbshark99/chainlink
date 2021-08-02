@@ -83,7 +83,7 @@ func (ks ocr) DeleteP2PKey(key *p2pkey.KeyV2) error {
 	if ks.isLocked() {
 		return LockedErr
 	}
-	return ks.safeRemoveKey(key)
+	return ks.safeRemoveKey(*key)
 }
 
 func (ks ocr) ImportP2PKey(keyJSON []byte, password string) (*p2pkey.KeyV2, error) {

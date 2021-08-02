@@ -52,9 +52,9 @@ func (k KeyV2) PeerID() PeerID {
 }
 
 func (k KeyV2) PublicKeyHex() string {
-	pubKeyBytes, err := k.GetPublic().Bytes()
+	pubKeyBytes, err := k.GetPublic().Raw()
 	if err != nil {
-		panic(err)
+		panic(err) // TODO - RYAN
 	}
 	return hex.EncodeToString(pubKeyBytes)
 }

@@ -24,12 +24,18 @@ CREATE TABLE eth_key_states(
 
 ALTER TABLE eth_txes DROP CONSTRAINT eth_txes_from_address_fkey;
 ALTER TABLE eth_txes ADD CONSTRAINT eth_txes_from_address_fkey FOREIGN KEY (from_address) REFERENCES eth_key_states(address);
+ALTER TABLE vrf_specs DROP CONSTRAINT vrf_specs_public_key_fkey;
+ALTER TABLE offchainreporting_oracle_specs DROP CONSTRAINT offchainreporting_oracle_specs_transmitter_address_fkey;
+ALTER TABLE ONLY offchainreporting_oracle_specs ADD CONSTRAINT offchainreporting_oracle_specs_transmitter_address_fkey FOREIGN KEY (transmitter_address) REFERENCES eth_key_states(address);
 `
 const down9999 = `
 DROP TABLE encrypted_key_rings;
 DROP TABLE eth_key_states;
 ALTER TABLE eth_txes DROP CONSTRAINT eth_txes_from_address_fkey;
 ALTER TABLE eth_txes ADD CONSTRAINT eth_txes_from_address_fkey FOREIGN KEY (from_address) REFERENCES keys(address);
+ALTER TABLE vrf_specs ADD CONSTRAINT vrf_specs_public_key_fkey FOREIGN KEY (public_key) REFERENCES encrypted_vrf_keys(public_key) ON DELETE CASCADE DEFERRABLE INITIALLY IMMEDIATE;
+ALTER TABLE offchainreporting_oracle_specs DROP CONSTRAINT offchainreporting_oracle_specs_transmitter_address_fkey;
+ALTER TABLE ONLY offchainreporting_oracle_specs ADD CONSTRAINT offchainreporting_oracle_specs_transmitter_address_fkey FOREIGN KEY (transmitter_address) REFERENCES keys(address);
 `
 
 func init() {

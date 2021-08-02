@@ -125,8 +125,12 @@ type keyManager struct {
 func (km *keyManager) Unlock(password string) error {
 	km.lock.Lock()
 	defer km.lock.Unlock()
+	// DEV: allow Unlock() to be idempotent - this is especially useful in tests,
 	if km.password != "" {
-		return errors.New("keystore already unlocked")
+		if password != km.password {
+			return errors.New("attempting to unlock keystore again with a different password")
+		}
+		return nil
 	}
 	ekr, err := km.getEncryptedKeyRing()
 	if err != nil {
@@ -212,15 +216,15 @@ func (km *keyManager) isLocked() bool {
 
 func getFieldNameForKey(unknownKey Key) (string, error) {
 	switch unknownKey.(type) {
-	case csakey.KeyV2:
+	case csakey.KeyV2, *csakey.KeyV2:
 		return "CSA", nil
-	case ethkey.KeyV2:
+	case ethkey.KeyV2, *ethkey.KeyV2:
 		return "Eth", nil
-	case ocrkey.KeyV2:
+	case ocrkey.KeyV2, *ocrkey.KeyV2:
 		return "OCR", nil
-	case p2pkey.KeyV2:
+	case p2pkey.KeyV2, *p2pkey.KeyV2:
 		return "P2P", nil
-	case vrfkey.KeyV2:
+	case vrfkey.KeyV2, *vrfkey.KeyV2:
 		return "VRF", nil
 	}
 	return "", errors.New(fmt.Sprintf("Unknown key type: %T", unknownKey))

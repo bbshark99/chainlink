@@ -110,6 +110,9 @@ func (ks vrf) Import(keyJSON []byte, password string) (*vrfkey.KeyV2, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "VRFKeyStore#ImportKey failed to decrypt key")
 	}
+	if _, found := ks.keyRing.VRF[key.ID()]; found {
+		return nil, errors.New("VRFKeyStore#ImportKey key already exists")
+	}
 	return &key, ks.safeAddKey(key)
 }
 
@@ -134,7 +137,7 @@ func (ks vrf) Get(id string) (*vrfkey.KeyV2, error) {
 	}
 	key, found := ks.keyRing.VRF[id]
 	if !found {
-		return nil, errors.New(fmt.Sprintf("OCR key not found with ID %s", id))
+		return nil, errors.New(fmt.Sprintf("VRF key not found with ID %s", id))
 	}
 	return &key, nil
 }

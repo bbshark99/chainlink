@@ -13,7 +13,7 @@ type CSAKeyPresenter struct {
 
 // RenderTable implements TableRenderer
 func (p *CSAKeyPresenter) RenderTable(rt RendererTable) error {
-	headers := []string{"ID", "Public key", "Created", "Updated"}
+	headers := []string{"ID", "Public key"}
 	rows := [][]string{p.ToRow()}
 
 	if _, err := rt.Write([]byte("🔑 CSA Keys\n")); err != nil {
@@ -37,7 +37,7 @@ type CSAKeyPresenters []CSAKeyPresenter
 
 // RenderTable implements TableRenderer
 func (ps CSAKeyPresenters) RenderTable(rt RendererTable) error {
-	headers := []string{"ID", "Public key", "Created", "Updated"}
+	headers := []string{"ID", "Public key"}
 	rows := [][]string{}
 
 	for _, p := range ps {

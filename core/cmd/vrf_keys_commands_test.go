@@ -7,14 +7,13 @@ import (
 	"testing"
 
 	"github.com/smartcontractkit/chainlink/core/utils"
-
 	"github.com/smartcontractkit/chainlink/core/web/presenters"
+	"github.com/urfave/cli"
 
 	"github.com/smartcontractkit/chainlink/core/cmd"
 	"github.com/smartcontractkit/chainlink/core/internal/cltest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/urfave/cli"
 )
 
 func TestVRFKeyPresenter_RenderTable(t *testing.T) {
@@ -111,8 +110,8 @@ func TestClientVRF_CRUD(t *testing.T) {
 	err := client.DeleteVRFKey(c)
 	require.NoError(t, err)
 	// Should return the deleted key
-	require.Equal(t, 8, len(r.Renders))
-	deletedKey := *r.Renders[7].(*cmd.VRFKeyPresenter)
+	require.Equal(t, 6, len(r.Renders))
+	deletedKey := *r.Renders[5].(*cmd.VRFKeyPresenter)
 	AssertKeysEqual(t, k2, deletedKey)
 	// Should NOT be in the DB as archived
 	allKeys, err := app.KeyStore.VRF().GetAll()

@@ -58,8 +58,7 @@ func TestETHKeyResource(t *testing.T) {
 			  "nextNonce":1,
 			  "isFunding":true,
 			  "createdAt":"2000-01-01T00:00:00Z",
-			  "updatedAt":"2000-01-01T00:00:00Z",
-			  "deletedAt":null
+			  "updatedAt":"2000-01-01T00:00:00Z"
 		   }
 		}
 	 }

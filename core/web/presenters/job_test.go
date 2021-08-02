@@ -32,8 +32,8 @@ func TestJob(t *testing.T) {
 
 	// Used in OCR tests
 	var (
-		peerIDStr      = "12D3KooWApUJaQB2saFjyEUfq6BmysnsSnhLnY5CF9tURYVKgoXK"
-		ocrKeyBundleID = "7f993fb701b3410b1f6e8d4d93a7462754d24609b9b31a4fe64a0cb475a4d934"
+		peerIDStr      = "12D3KooWFX81q1r31xnoQwJ4WdptssdEYZXcFAryonqK1Eo2XSvG"
+		ocrKeyBundleID = "2dec5de7aff8164412c0fbaa2f06654e10e709ee78f031cba9244d453399358e"
 	)
 	p2pPeerID, err := peer.Decode(peerIDStr)
 	require.NoError(t, err)

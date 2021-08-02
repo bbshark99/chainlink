@@ -2,6 +2,8 @@
 -- Scrypt params are chosen to be completely insecure and very fast to decrypt
 -- Don't use any of these keys for anything outside of testing!
 
+
+-- TODO - RYAN - delete
 INSERT INTO "public"."encrypted_ocr_key_bundles"("id","on_chain_signing_address","off_chain_public_key","encrypted_private_keys","created_at","updated_at","config_public_key")
 VALUES
 (
@@ -32,3 +34,11 @@ INSERT INTO users (email, hashed_password, token_secret, created_at, updated_at)
     '2019-01-01',
     '2019-01-01'
 );
+
+INSERT INTO encrypted_key_rings (id, encrypted_keys, updated_at) VALUES (
+    1,
+    E'{"cipher":"aes-128-ctr","ciphertext":"8d598fa72e7211afa61042e57fe151e73f88063c6a6dd95b62863424659994045bf3aa54ba6f50a20efc3f284f597c02e844f4d045151b19856588711a1ec159a8525254d2f645a91419b7243035cc1c9ffb5de0b049d0123ca841350346145f698407ccd0a4477778c8ff986a1dfb10fef34647cf8ceb882867b16181239c9c010639938126c4730832c7b12cf78714db03b0168ca3c180bfba6d7a509b8e28dc34230a24432eaa7caa2ec8375499dd648fb7b2f20ce20749756df346bdde32e6b949ef3ef4dda3c6c69e661bd4165541525ce08e1fd123fd0e80374c453d74ebec98df6cedd630c3581b326ed285480cb491c154d847df7453ee6cdc00d65133dd699915d69ed56236bc7b9550eeb31cf5e0b6409ce5820a923d3dbc56b6ebf2c289c1fb2422c834f16406a04d808ea3094eb96e8e3ee5399486625f934e00","cipherparams":{"iv":"45429bbc5fac94654139a6dace971d5b"},"kdf":"scrypt","kdfparams":{"dklen":32,"n":2,"p":1,"r":8,"salt":"83e5e10139fe1a916f138aa82e899e3d2a38a75111944f2e4b42ddd17af84f00"},"mac":"829f3a0c622c5d38b1645d3ba6b733f72de4aef8be768fee6ffa9b528c5b9780"}',
+    E'2021-01-22 02:59:40.085609+00'
+);
+
+

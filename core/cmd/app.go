@@ -560,12 +560,12 @@ func NewApp(client *Client) *cli.App {
 					Description: "Does not work remotely over API.",
 					Action:      client.DeleteUser,
 				},
-				{
-					Name:    "import",
-					Aliases: []string{"i"},
-					Usage:   "Import a key file to use with the node",
-					Action:  client.ImportKey,
-				},
+				// {
+				// 	Name:    "import",
+				// 	Aliases: []string{"i"},
+				// 	Usage:   "Import a key file to use with the node",
+				// 	Action:  client.ImportKey,
+				// },
 				{
 					Name:   "setnextnonce",
 					Usage:  "Manually set the next nonce for a key. This should NEVER be necessary during normal operation. USE WITH CAUTION: Setting this incorrectly can break your node.",

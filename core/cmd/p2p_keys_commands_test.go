@@ -23,7 +23,7 @@ func TestP2PKeyPresenter_RenderTable(t *testing.T) {
 
 	var (
 		id     = "1"
-		peerID = "12D3KooWApUJaQB2saFjyEUfq6BmysnsSnhLnY5CF9tURYVKgoXK"
+		peerID = "12D3KooWFX81q1r31xnoQwJ4WdptssdEYZXcFAryonqK1Eo2XSvG"
 		pubKey = "somepubkey"
 		buffer = bytes.NewBufferString("")
 		r      = cmd.RendererTable{Writer: buffer}
@@ -126,7 +126,7 @@ func TestClient_ImportExportP2PKeyBundle(t *testing.T) {
 	// Export test invalid id
 	set := flag.NewFlagSet("test P2P export", 0)
 	set.Parse([]string{"0"})
-	set.String("newpassword", "../internal/fixtures/apicredentials", "")
+	set.String("newpassword", "../internal/fixtures/incorrect_password.txt", "")
 	set.String("output", keyName, "")
 	c := cli.NewContext(nil, set, nil)
 	err := client.ExportP2PKey(c)
@@ -136,7 +136,7 @@ func TestClient_ImportExportP2PKeyBundle(t *testing.T) {
 	// Export test
 	set = flag.NewFlagSet("test P2P export", 0)
 	set.Parse([]string{fmt.Sprint(key.ID())})
-	set.String("newpassword", "../internal/fixtures/apicredentials", "")
+	set.String("newpassword", "../internal/fixtures/incorrect_password.txt", "")
 	set.String("output", keyName, "")
 	c = cli.NewContext(nil, set, nil)
 
@@ -148,7 +148,7 @@ func TestClient_ImportExportP2PKeyBundle(t *testing.T) {
 
 	set = flag.NewFlagSet("test P2P import", 0)
 	set.Parse([]string{keyName})
-	set.String("oldpassword", "../internal/fixtures/apicredentials", "")
+	set.String("oldpassword", "../internal/fixtures/incorrect_password.txt", "")
 	c = cli.NewContext(nil, set, nil)
 	require.NoError(t, client.ImportP2PKey(c))
 

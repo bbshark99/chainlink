@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-	"strconv"
 
 	"github.com/pkg/errors"
 	"github.com/smartcontractkit/chainlink/core/utils"
@@ -98,10 +97,7 @@ func (cli *Client) DeleteP2PKey(c *cli.Context) (err error) {
 	if !c.Args().Present() {
 		return cli.errorOut(errors.New("Must pass the key ID to be deleted"))
 	}
-	id, err := strconv.ParseUint(c.Args().Get(0), 10, 32)
-	if err != nil {
-		return cli.errorOut(err)
-	}
+	id := c.Args().Get(0)
 
 	if !confirmAction(c) {
 		return nil
@@ -112,7 +108,7 @@ func (cli *Client) DeleteP2PKey(c *cli.Context) (err error) {
 		queryStr = "?hard=true"
 	}
 
-	resp, err := cli.HTTP.Delete(fmt.Sprintf("/v2/keys/p2p/%d%s", id, queryStr))
+	resp, err := cli.HTTP.Delete(fmt.Sprintf("/v2/keys/p2p/%s%s", id, queryStr))
 	if err != nil {
 		return cli.errorOut(err)
 	}

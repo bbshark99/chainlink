@@ -158,3 +158,7 @@ func (pk *KeyV2) PublicKeyConfig() [curve25519.PointSize]byte {
 	copy(rvFixed[:], rv)
 	return rvFixed
 }
+
+func (pk *KeyV2) GetID() string {
+	return pk.ID()
+}

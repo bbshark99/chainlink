@@ -1,12 +1,10 @@
 package presenters
 
 import (
-	"crypto/rand"
 	"encoding/hex"
 	"fmt"
 	"testing"
 
-	cryptop2p "github.com/libp2p/go-libp2p-core/crypto"
 	"github.com/manyminds/api2go/jsonapi"
 	"github.com/smartcontractkit/chainlink/core/services/keystore/keys/p2pkey"
 	"github.com/stretchr/testify/assert"
@@ -14,12 +12,12 @@ import (
 )
 
 func TestP2PKeyResource(t *testing.T) {
-	_, pubKey, err := cryptop2p.GenerateEd25519Key(rand.Reader)
-	require.NoError(t, err)
-	pubKeyBytes, err := pubKey.Raw()
-	require.NoError(t, err)
+	// _, pubKey, err := cryptop2p.GenerateEd25519Key(rand.Reader)
+	// require.NoError(t, err)
+	// pubKeyBytes, err := pubKey.Raw()
+	// require.NoError(t, err)
 
-	// peerIDStr := "12D3KooWApUJaQB2saFjyEUfq6BmysnsSnhLnY5CF9tURYVKgoXK"
+	// peerIDStr := "12D3KooWFX81q1r31xnoQwJ4WdptssdEYZXcFAryonqK1Eo2XSvG"
 	// p2pPeerID, err := peer.Decode(peerIDStr)
 	// require.NoError(t, err)
 	// peerID := p2pkey.PeerID(p2pPeerID)
@@ -28,6 +26,9 @@ func TestP2PKeyResource(t *testing.T) {
 	require.NoError(t, err)
 	peerID := key.PeerID()
 	peerIDStr := peerID.String()
+	pubKey := key.GetPublic()
+	pubKeyBytes, err := pubKey.Raw()
+	require.NoError(t, err)
 
 	r := NewP2PKeyResource(key)
 	b, err := jsonapi.Marshal(r)
@@ -37,16 +38,13 @@ func TestP2PKeyResource(t *testing.T) {
 	{
 		"data":{
 			"type":"encryptedP2PKeys",
-			"id":"1",
+			"id":"%s",
 			"attributes":{
 				"peerId":"%s",
-				"publicKey": "%s",
-				"createdAt":"2000-01-01T00:00:00Z",
-				"updatedAt":"2000-01-01T00:00:00Z",
-				"deletedAt":null
+				"publicKey": "%s"
 			}
 		}
-	}`, peerIDStr, hex.EncodeToString(pubKeyBytes))
+	}`, key.ID(), peerIDStr, hex.EncodeToString(pubKeyBytes))
 
 	assert.JSONEq(t, expected, string(b))
 
@@ -58,13 +56,13 @@ func TestP2PKeyResource(t *testing.T) {
 	{
 		"data": {
 			"type":"encryptedP2PKeys",
-			"id":"1",
+			"id":"%s",
 			"attributes":{
-				"peerId":"p2p_%s",
-				"publicKey": "%s",
+				"peerId":"%s",
+				"publicKey": "%s"
 			}
 		}
-	}`, peerIDStr, hex.EncodeToString(pubKeyBytes))
+	}`, key.ID(), peerIDStr, hex.EncodeToString(pubKeyBytes))
 
 	assert.JSONEq(t, expected, string(b))
 }

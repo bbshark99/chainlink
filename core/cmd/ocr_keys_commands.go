@@ -22,7 +22,7 @@ type OCRKeyBundlePresenter struct {
 
 // RenderTable implements TableRenderer
 func (p *OCRKeyBundlePresenter) RenderTable(rt RendererTable) error {
-	headers := []string{"ID", "On-chain signing addr", "Off-chain pubkey", "Config pubkey", "Created", "Updated", "Deleted"}
+	headers := []string{"ID", "On-chain signing addr", "Off-chain pubkey", "Config pubkey"}
 	rows := [][]string{p.ToRow()}
 
 	if _, err := rt.Write([]byte("🔑 OCR Keys\n")); err != nil {

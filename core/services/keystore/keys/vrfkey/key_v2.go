@@ -2,10 +2,10 @@ package vrfkey
 
 import (
 	"crypto/rand"
-	"encoding/hex"
 	"fmt"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/pkg/errors"
 	"github.com/smartcontractkit/chainlink/core/services/signatures/secp256k1"
 	"github.com/smartcontractkit/chainlink/core/utils"
@@ -46,7 +46,7 @@ func MustNewV2XXXTestingOnly(k *big.Int) KeyV2 {
 }
 
 func (key KeyV2) ID() string {
-	return hex.EncodeToString(key.PublicKey[:])
+	return hexutil.Encode(key.PublicKey[:])
 }
 
 func (key KeyV2) Raw() Raw {
