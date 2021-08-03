@@ -24,6 +24,7 @@ func FromEncryptedJSON(keyJSON []byte, password string) (KeyV2, error) {
 
 type EncryptedVRFKeyExport struct {
 	KeyType string              `json:"keyType"`
+	ID      string              `json:"id"`
 	Address string              `json:"address"`
 	Crypto  keystore.CryptoJSON `json:"crypto"`
 }
@@ -40,6 +41,7 @@ func (key KeyV2) ToEncryptedJSON(password string, scryptParams utils.ScryptParam
 	}
 	encryptedOCRKExport := EncryptedVRFKeyExport{
 		KeyType: keyTypeIdentifier,
+		ID:      key.ID(),
 		Address: key.PublicKey.Address().Hex(),
 		Crypto:  cryptoJSON,
 	}

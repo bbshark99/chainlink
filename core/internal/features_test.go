@@ -1181,6 +1181,7 @@ func TestIntegration_FluxMonitor_Deviation(t *testing.T) {
 		ethClient,
 	)
 	defer appCleanup()
+	app.KeyStore.Unlock(cltest.Password)
 
 	_, address := cltest.MustAddRandomKeyToKeystore(t, app.GetKeyStore().Eth())
 

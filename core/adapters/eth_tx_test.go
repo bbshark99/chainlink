@@ -5,13 +5,12 @@ import (
 	"encoding/hex"
 	"testing"
 
-	"github.com/smartcontractkit/chainlink/core/utils"
-
 	"github.com/smartcontractkit/chainlink/core/adapters"
 	"github.com/smartcontractkit/chainlink/core/internal/cltest"
 	"github.com/smartcontractkit/chainlink/core/services/bulletprooftxmanager"
 	"github.com/smartcontractkit/chainlink/core/services/headtracker"
 	"github.com/smartcontractkit/chainlink/core/store/models"
+	"github.com/smartcontractkit/chainlink/core/utils"
 
 	gethCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -107,7 +106,7 @@ func TestEthTxAdapter_Perform_BPTXM(t *testing.T) {
 		taskRunID, jobRun := cltest.MustInsertTaskRun(t, store)
 		input := models.NewRunInputWithResult(jobRun, taskRunID, "0x9786856756", models.RunStatusUnstarted)
 		runOutput := adapter.Perform(*input, store, keyStore)
-		require.EqualError(t, runOutput.Error(), "insertEthTx failed to pickFromAddress: no keys available")
+		require.EqualError(t, runOutput.Error(), "insertEthTx failed to pickFromAddress: record not found")
 		assert.Equal(t, models.RunStatusErrored, runOutput.Status())
 	})
 

@@ -77,7 +77,7 @@ func TestClient_ListOCRKeyBundles(t *testing.T) {
 	assert.Nil(t, client.ListOCRKeyBundles(cltest.EmptyCLIContext()))
 	require.Equal(t, 1, len(r.Renders))
 	output := *r.Renders[0].(*cmd.OCRKeyBundlePresenters)
-	assert.Equal(t, key.ID(), output[1].ID)
+	assert.True(t, key.ID() == output[0].ID || key.ID() == output[1].ID)
 }
 
 func TestClient_CreateOCRKeyBundle(t *testing.T) {

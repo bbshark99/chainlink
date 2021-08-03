@@ -4,6 +4,7 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/smartcontractkit/chainlink/core/services/keystore/keys/vrfkey"
 	"github.com/smartcontractkit/chainlink/core/services/vrf/proof"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -29,8 +30,12 @@ func TestRandom_Perform(t *testing.T) {
 	t.Parallel()
 	store, cleanup := cltest.NewStore(t)
 	defer cleanup()
+
 	keyStore := cltest.NewKeyStore(t, store.DB)
-	publicKey := cltest.StoredVRFKey(t, keyStore.VRF()).PublicKey
+	weakKey := vrfkey.MustNewV2XXXTestingOnly(big.NewInt(1))
+	keyStore.VRF().Store(&weakKey)
+	publicKey := weakKey.PublicKey
+
 	adapter := adapters.Random{PublicKey: publicKey.String()}
 	hash := utils.MustHash("a random string")
 	seed := big.NewInt(0x10)
@@ -59,7 +64,7 @@ func TestRandom_Perform(t *testing.T) {
 	actualProof, err := response.CryptoProof(proof.TestXXXSeedData(t, seed, hash, blockNum))
 	require.NoError(t, err, "could not extract proof from random adapter response")
 	expected := common.HexToHash(
-		"0x71a7c50918feaa753485ae039cb84ddd70c5c85f66b236138dea453a23d0f27e")
+		"0x15a2414952cee0ca96c74d377cb8a63ef339520bdb689097a21c3d92179a5303")
 	assert.Equal(t, expected, common.BigToHash(actualProof.Output),
 		"unexpected VRF output; perhas vrfkey.json or the output hashing function "+
 			"in RandomValueFromVRFProof has changed?")
@@ -78,7 +83,10 @@ func TestRandom_Perform_CheckFulfillment(t *testing.T) {
 
 	ethMock := new(mocks.Client)
 
-	publicKey := cltest.StoredVRFKey(t, keyStore.VRF()).PublicKey
+	key, err := keyStore.VRF().CreateKey()
+	require.NoError(t, err)
+	publicKey := key.PublicKey
+
 	address := cltest.NewEIP55Address()
 	hash := utils.MustHash("a random string")
 	seed := big.NewInt(0x10)

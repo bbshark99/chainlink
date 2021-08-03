@@ -7,7 +7,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/smartcontractkit/chainlink/core/services/keystore/keys/vrfkey"
 	"github.com/smartcontractkit/chainlink/core/services/signatures/secp256k1"
-	"github.com/smartcontractkit/chainlink/core/utils"
 )
 
 // ErrMatchingVRFKey is returned when Import attempts to import key with a
@@ -22,7 +21,7 @@ var ErrAttemptToDeleteNonExistentKeyFromDB = errors.New("key is not present in D
 type VRF interface {
 	GenerateProof(id string, seed *big.Int) (vrfkey.Proof, error)
 	CreateKey() (*vrfkey.KeyV2, error)
-	Store(key *vrfkey.KeyV2, phrase string, scryptParams utils.ScryptParams) error
+	Store(key *vrfkey.KeyV2) error
 	StoreInMemoryXXXTestingOnly(key *vrfkey.KeyV2)
 	Delete(id string) (err error)
 	Import(keyjson []byte, auth string) (*vrfkey.KeyV2, error)
@@ -77,8 +76,13 @@ func (ks vrf) CreateAndUnlockWeakInMemoryEncryptedKeyXXXTestingOnly(phrase strin
 	return nil, nil
 }
 
-func (ks vrf) Store(key *vrfkey.KeyV2, phrase string, scryptParams utils.ScryptParams) error {
-	return nil
+func (ks vrf) Store(key *vrfkey.KeyV2) error {
+	ks.lock.Lock()
+	defer ks.lock.Unlock()
+	if ks.isLocked() {
+		return LockedErr
+	}
+	return ks.safeAddKey(*key)
 }
 
 func (ks vrf) StoreInMemoryXXXTestingOnly(key *vrfkey.KeyV2) {
