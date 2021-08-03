@@ -8,7 +8,6 @@ import (
 	"github.com/smartcontractkit/chainlink/core/assets"
 	"github.com/smartcontractkit/chainlink/core/internal/cltest"
 	"github.com/smartcontractkit/chainlink/core/internal/mocks"
-	"github.com/smartcontractkit/chainlink/core/services/keystore/keys/ethkey"
 	webpresenters "github.com/smartcontractkit/chainlink/core/web/presenters"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -102,16 +101,13 @@ func TestETHKeysController_Index_NoAccounts(t *testing.T) {
 	t.Cleanup(cleanup)
 	require.NoError(t, app.Start())
 
-	err := app.Store.ORM.DB.Delete(&ethkey.Key{}, "id = ?", app.Key.ID).Error
-	require.NoError(t, err)
-
 	client := app.NewHTTPClient()
 
 	resp, cleanup := client.Get("/v2/keys/eth")
 	defer cleanup()
 
 	balances := []webpresenters.ETHKeyResource{}
-	err = cltest.ParseJSONAPIResponse(t, resp, &balances)
+	err := cltest.ParseJSONAPIResponse(t, resp, &balances)
 	assert.NoError(t, err)
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
