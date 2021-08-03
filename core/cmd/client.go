@@ -44,7 +44,7 @@ type Client struct {
 	Renderer
 	Config                         *config.Config
 	AppFactory                     AppFactory
-	KeyStoreAuthenticator          TerminalKeyStoreAuthenticator
+	KeyStoreAuthenticator          TerminalKeyStoreAuthenticator // TODO - RYAN - just rename KeyStoreAuthenticator
 	FallbackAPIInitializer         APIInitializer
 	Runner                         Runner
 	HTTP                           HTTPClient

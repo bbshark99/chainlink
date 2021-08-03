@@ -13,6 +13,8 @@ import (
 	"golang.org/x/term"
 )
 
+//go:generate mockery --name Prompter --output ./mocks/
+
 // Prompter implements the Prompt function to be used to display at
 // the console.
 type Prompter interface {

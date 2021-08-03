@@ -13,6 +13,7 @@ import (
 	"github.com/smartcontractkit/chainlink/core/store/dialects"
 
 	"github.com/smartcontractkit/chainlink/core/cmd"
+	cmdMocks "github.com/smartcontractkit/chainlink/core/cmd/mocks"
 	"github.com/smartcontractkit/chainlink/core/internal/cltest"
 	"github.com/smartcontractkit/chainlink/core/internal/cltest/heavyweight"
 	"github.com/smartcontractkit/chainlink/core/internal/mocks"
@@ -239,16 +240,21 @@ func TestClient_RunNodeWithAPICredentialsFile(t *testing.T) {
 			ethClient.On("Dial", mock.Anything).Return(nil)
 			ethClient.On("BalanceAt", mock.Anything, mock.Anything, mock.Anything).Return(big.NewInt(10), nil)
 
+			prompter := new(cmdMocks.Prompter)
+			prompter.On("IsTerminal").Return(false).Once().Maybe()
+
 			apiPrompt := &cltest.MockAPIInitializer{}
 			client := cmd.Client{
 				Config:                 cfg,
 				AppFactory:             cltest.InstanceAppFactory{App: app},
+				KeyStoreAuthenticator:  cmd.TerminalKeyStoreAuthenticator{prompter},
 				FallbackAPIInitializer: apiPrompt,
 				Runner:                 cltest.EmptyRunner{},
 			}
 
 			set := flag.NewFlagSet("test", 0)
 			set.String("api", test.apiFile, "")
+			set.String("password", "../internal/fixtures/correct_password.txt", "")
 			c := cli.NewContext(nil, set, nil)
 
 			if test.wantError {
