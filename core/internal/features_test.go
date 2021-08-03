@@ -719,6 +719,7 @@ func TestIntegration_SyncJobRuns(t *testing.T) {
 		ethClient,
 	)
 	defer cleanup()
+	app.KeyStore.Unlock(cltest.Password)
 	cltest.MustAddRandomKeyToKeystore(t, app.GetKeyStore().Eth())
 
 	app.InstantClock()

@@ -26,7 +26,10 @@ ALTER TABLE eth_txes DROP CONSTRAINT eth_txes_from_address_fkey;
 ALTER TABLE eth_txes ADD CONSTRAINT eth_txes_from_address_fkey FOREIGN KEY (from_address) REFERENCES eth_key_states(address);
 ALTER TABLE vrf_specs DROP CONSTRAINT vrf_specs_public_key_fkey;
 ALTER TABLE offchainreporting_oracle_specs DROP CONSTRAINT offchainreporting_oracle_specs_transmitter_address_fkey;
-ALTER TABLE ONLY offchainreporting_oracle_specs ADD CONSTRAINT offchainreporting_oracle_specs_transmitter_address_fkey FOREIGN KEY (transmitter_address) REFERENCES eth_key_states(address);
+ALTER TABLE offchainreporting_oracle_specs ADD CONSTRAINT offchainreporting_oracle_specs_transmitter_address_fkey FOREIGN KEY (transmitter_address) REFERENCES eth_key_states(address);
+ALTER TABLE offchainreporting_oracle_specs DROP CONSTRAINT offchainreporting_oracle_specs_encrypted_ocr_key_bundle_id_fkey;
+ALTER TABLE offchainreporting_oracle_specs DROP CONSTRAINT offchainreporting_oracle_specs_p2p_peer_id_fkey;
+
 `
 const down9999 = `
 DROP TABLE encrypted_key_rings;
@@ -35,7 +38,9 @@ ALTER TABLE eth_txes DROP CONSTRAINT eth_txes_from_address_fkey;
 ALTER TABLE eth_txes ADD CONSTRAINT eth_txes_from_address_fkey FOREIGN KEY (from_address) REFERENCES keys(address);
 ALTER TABLE vrf_specs ADD CONSTRAINT vrf_specs_public_key_fkey FOREIGN KEY (public_key) REFERENCES encrypted_vrf_keys(public_key) ON DELETE CASCADE DEFERRABLE INITIALLY IMMEDIATE;
 ALTER TABLE offchainreporting_oracle_specs DROP CONSTRAINT offchainreporting_oracle_specs_transmitter_address_fkey;
-ALTER TABLE ONLY offchainreporting_oracle_specs ADD CONSTRAINT offchainreporting_oracle_specs_transmitter_address_fkey FOREIGN KEY (transmitter_address) REFERENCES keys(address);
+ALTER TABLE offchainreporting_oracle_specs ADD CONSTRAINT offchainreporting_oracle_specs_transmitter_address_fkey FOREIGN KEY (transmitter_address) REFERENCES keys(address);
+ALTER TABLE offchainreporting_oracle_specs ADD CONSTRAINT offchainreporting_oracle_specs_encrypted_ocr_key_bundle_id_fkey FOREIGN KEY (encrypted_ocr_key_bundle_id) REFERENCES encrypted_ocr_key_bundles(id);
+ALTER TABLE offchainreporting_oracle_specs ADD CONSTRAINT offchainreporting_oracle_specs_p2p_peer_id_fkey FOREIGN KEY (p2p_peer_id) REFERENCES encrypted_p2p_keys(peer_id)
 `
 
 func init() {
