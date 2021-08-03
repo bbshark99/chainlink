@@ -57,6 +57,7 @@ func TestClient_RunNodeShowsEnv(t *testing.T) {
 
 	set := flag.NewFlagSet("test", 0)
 	set.Bool("debug", true, "")
+	set.String("password", "../internal/fixtures/correct_password.txt", "")
 	c := cli.NewContext(nil, set, nil)
 
 	// Start RunNode in a goroutine, it will block until we resume the runner

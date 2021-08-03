@@ -44,6 +44,7 @@ type Client struct {
 	Renderer
 	Config                         *config.Config
 	AppFactory                     AppFactory
+	KeyStoreAuthenticator          TerminalKeyStoreAuthenticator
 	FallbackAPIInitializer         APIInitializer
 	Runner                         Runner
 	HTTP                           HTTPClient

@@ -25,6 +25,7 @@ type Master interface {
 	VRF() VRF
 	Unlock(password string) error
 	Migrate() error
+	IsEmpty() (bool, error)
 }
 
 type masterV2 struct {
@@ -70,6 +71,15 @@ func (ks *masterV2) OCR() OCR {
 
 func (ks *masterV2) VRF() VRF {
 	return ks.vrf
+}
+
+func (ks *masterV2) IsEmpty() (bool, error) {
+	var count int64
+	err := ks.db.Model(encryptedKeyRing{}).Count(&count).Error
+	if err != nil {
+		return false, err
+	}
+	return count > 0, nil
 }
 
 func (ks *masterV2) Migrate() error {

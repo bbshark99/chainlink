@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/pkg/errors"
@@ -24,6 +25,7 @@ func Run(client *cmd.Client, args ...string) {
 // in production.
 func NewProductionClient() *cmd.Client {
 	cfg := config.NewConfig()
+	fmt.Println("hereeee")
 	prompter := cmd.NewTerminalPrompter()
 	cookieAuth := cmd.NewSessionCookieAuthenticator(cfg, cmd.DiskCookieStore{Config: cfg})
 	sr := models.SessionRequest{}
@@ -39,6 +41,7 @@ func NewProductionClient() *cmd.Client {
 		Renderer:                       cmd.RendererTable{Writer: os.Stdout},
 		Config:                         cfg,
 		AppFactory:                     cmd.ChainlinkAppFactory{},
+		KeyStoreAuthenticator:          cmd.TerminalKeyStoreAuthenticator{Prompter: prompter},
 		FallbackAPIInitializer:         cmd.NewPromptingAPIInitializer(prompter),
 		Runner:                         cmd.ChainlinkRunner{},
 		HTTP:                           cmd.NewAuthenticatedHTTPClient(cfg, cookieAuth, sr),

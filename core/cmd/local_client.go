@@ -68,26 +68,18 @@ func (cli *Client) RunNode(c *clipkg.Context) error {
 		logger.Warn("Ethereum is disabled. Chainlink will only run services that can operate without an ethereum connection")
 	}
 
-	pwd, err := passwordFromFile(c.String("password"))
-	if err != nil {
-		return cli.errorOut(fmt.Errorf("error reading password: %+v", err))
-	}
-
 	app, err := cli.AppFactory.NewApplication(cli.Config)
 	if err != nil {
 		return cli.errorOut(errors.Wrap(err, "creating application"))
 	}
 	store := app.GetStore()
 	keyStore := app.GetKeyStore()
+	err = cli.KeyStoreAuthenticator.authenticate(c, keyStore)
+	if err != nil {
+		return cli.errorOut(errors.Wrap(err, "error authenticating keystore"))
+	}
 	if e := checkFilePermissions(cli.Config.RootDir()); e != nil {
 		logger.Warn(e)
-	}
-
-	// TODO - RYAN - prompt for password here
-	var keyStorePwd string
-	err = keyStore.Unlock(pwd)
-	if err != nil {
-		return cli.errorOut(fmt.Errorf("error authenticating keystore: %+v", err))
 	}
 
 	var user models.User
@@ -112,7 +104,7 @@ func (cli *Client) RunNode(c *clipkg.Context) error {
 	}
 
 	if !store.Config.EthereumDisabled() {
-		key, currentBalance, err := setupFundingKey(context.TODO(), app.GetEthClient(), keyStore.Eth(), keyStorePwd)
+		key, currentBalance, err := setupFundingKey(context.TODO(), app.GetEthClient(), keyStore.Eth())
 		if err != nil {
 			return cli.errorOut(errors.Wrap(err, "failed to generate a funding address"))
 		}
@@ -219,7 +211,6 @@ func logConfigVariables(store *strpkg.Store) error {
 func setupFundingKey(ctx context.Context,
 	etClient eth.Client,
 	ethKeyStore keystore.Eth,
-	pwd string,
 ) (key ethkey.KeyV2, balance *big.Int, err error) {
 	key, existed, err := ethKeyStore.EnsureFundingKey()
 	if err != nil {
