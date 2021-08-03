@@ -31,14 +31,15 @@ func (auth TerminalKeyStoreAuthenticator) authenticate(c *clipkg.Context, keySto
 		return errors.Wrap(err, "error reading password from file")
 	}
 	passwordProvided := len(password) != 0
+	if passwordProvided {
+		return keyStore.Unlock(password)
+	}
 	interactive := auth.Prompter.IsTerminal()
 	isEmpty, err := keyStore.IsEmpty()
 	if err != nil {
 		return errors.Wrap(err, "error determining if keystore is empty")
 	}
-	if passwordProvided {
-		// do nothing
-	} else if !interactive {
+	if !interactive {
 		return errors.New("no password provided")
 	} else if !isEmpty {
 		password = auth.promptExistingPassword()

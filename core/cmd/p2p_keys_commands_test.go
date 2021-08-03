@@ -72,6 +72,7 @@ func TestClient_ListP2PKeys(t *testing.T) {
 	require.Equal(t, 1, len(r.Renders))
 	keys := *r.Renders[0].(*cmd.P2PKeyPresenters)
 	assert.Equal(t, key.PublicKeyHex(), keys[1].PubKey)
+	assert.True(t, key.PublicKeyHex() == keys[0].PubKey || key.PublicKeyHex() == keys[1].PubKey)
 }
 
 func TestClient_CreateP2PKey(t *testing.T) {
