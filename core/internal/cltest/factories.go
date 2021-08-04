@@ -48,7 +48,7 @@ import (
 
 // NewAddress return a random new address
 func NewAddress() common.Address {
-	return common.BytesToAddress(randomBytes(20))
+	return common.BytesToAddress(RandomBytes(20))
 }
 
 func NewEIP55Address() ethkey.EIP55Address {
@@ -68,14 +68,14 @@ func NewPeerID() p2ppeer.ID {
 	return id
 }
 
-func randomBytes(n int) []byte {
+func RandomBytes(n int) []byte {
 	b := make([]byte, n)
 	_, _ = rand.Read(b) // Assignment for errcheck. Only used in tests so we can ignore.
 	return b
 }
 
 func Random32Byte() (b [32]byte) {
-	copy(b[:], randomBytes(32))
+	copy(b[:], RandomBytes(32))
 	return b
 }
 

@@ -66,14 +66,15 @@ type (
 	// should also update presenters.ConfigWhitelist and cmd_test.TestClient_RunNodeShowsEnv.
 	// TODO: Make this private and expose an interface?
 	Config struct {
-		viper            *viper.Viper
-		SecretGenerator  SecretGenerator
-		ORM              *ORM
-		randomP2PPort    uint16
-		randomP2PPortMtx *sync.RWMutex
-		Dialect          dialects.DialectName
-		AdvisoryLockID   int64
-		// keystorePassword string
+		viper                *viper.Viper
+		SecretGenerator      SecretGenerator
+		ORM                  *ORM
+		randomOCR2P2PPort    uint16
+		randomOCR2P2PPortMtx *sync.RWMutex
+		randomP2PPort        uint16
+		randomP2PPortMtx     *sync.RWMutex
+		Dialect              dialects.DialectName
+		AdvisoryLockID       int64
 	}
 )
 
@@ -105,9 +106,10 @@ func newConfigWithViper(v *viper.Viper) *Config {
 	_ = v.BindEnv("MINIMUM_CONTRACT_PAYMENT")
 
 	config := &Config{
-		viper:            v,
-		SecretGenerator:  filePersistedSecretGenerator{},
-		randomP2PPortMtx: new(sync.RWMutex),
+		viper:                v,
+		SecretGenerator:      filePersistedSecretGenerator{},
+		randomP2PPortMtx:     new(sync.RWMutex),
+		randomOCR2P2PPortMtx: new(sync.RWMutex),
 	}
 
 	if err := utils.EnsureDirAndMaxPerms(config.RootDir(), os.FileMode(0700)); err != nil {
@@ -425,6 +427,11 @@ func (c Config) FeatureFluxMonitorV2() bool {
 // FeatureOffchainReporting enables the Flux Monitor job type.
 func (c Config) FeatureOffchainReporting() bool {
 	return c.viper.GetBool(EnvVarName("FeatureOffchainReporting"))
+}
+
+// FeatureOffchainReporting2 enables generalized offchain reporting support
+func (c Config) FeatureOffchainReporting2() bool {
+	return c.viper.GetBool(EnvVarName("FeatureOffchainReporting2"))
 }
 
 // FeatureWebhookV2 enables the Webhook v2 job type

@@ -1,4 +1,4 @@
-package offchainreporting
+package offchainreporting2
 
 import (
 	"io"
@@ -16,7 +16,7 @@ import (
 	"github.com/smartcontractkit/chainlink/core/utils"
 	ocrcommontypes "github.com/smartcontractkit/libocr/commontypes"
 	ocrnetworking "github.com/smartcontractkit/libocr/networking"
-	ocrtypes "github.com/smartcontractkit/libocr/offchainreporting/types"
+	ocrtypes "github.com/smartcontractkit/libocr/offchainreporting2/types"
 	"go.uber.org/multierr"
 	"gorm.io/gorm"
 )
@@ -179,8 +179,8 @@ func (p *SingletonPeerWrapper) Start() error {
 		}
 		p.Peer = peerAdapter{
 			peer,
-			peer.OCRBinaryNetworkEndpointFactory(),
-			peer.OCRBootstrapperFactory(),
+			peer.GenOCRBinaryNetworkEndpointFactory(),
+			peer.GenOCRBootstrapperFactory(),
 		}
 		return p.pstoreWrapper.Start()
 	})

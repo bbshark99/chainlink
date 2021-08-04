@@ -1,4 +1,4 @@
-package offchainreporting
+package offchainreporting2
 
 import (
 	"context"
@@ -12,7 +12,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/smartcontractkit/chainlink/core/chains"
-	"github.com/smartcontractkit/chainlink/core/internal/gethwrappers/generated/offchain_aggregator_wrapper"
+	offchain_aggregator_wrapper "github.com/smartcontractkit/chainlink/core/internal/gethwrappers2/generated/offchainaggregator"
 	"github.com/smartcontractkit/chainlink/core/logger"
 	"github.com/smartcontractkit/chainlink/core/services/bulletprooftxmanager"
 	"github.com/smartcontractkit/chainlink/core/services/eth"
@@ -20,14 +20,16 @@ import (
 	"github.com/smartcontractkit/chainlink/core/services/job"
 	"github.com/smartcontractkit/chainlink/core/services/keystore"
 	"github.com/smartcontractkit/chainlink/core/services/keystore/keys/ethkey"
+	"github.com/smartcontractkit/chainlink/core/services/keystore/keys/ocrkey"
 	"github.com/smartcontractkit/chainlink/core/services/keystore/keys/p2pkey"
 	"github.com/smartcontractkit/chainlink/core/services/log"
 	"github.com/smartcontractkit/chainlink/core/services/pipeline"
 	"github.com/smartcontractkit/chainlink/core/store/models"
-	"github.com/smartcontractkit/libocr/gethwrappers/offchainaggregator"
-	ocr "github.com/smartcontractkit/libocr/offchainreporting"
-	ocrtypes "github.com/smartcontractkit/libocr/offchainreporting/types"
 	ocrcommontypes "github.com/smartcontractkit/libocr/commontypes"
+	"github.com/smartcontractkit/libocr/gethwrappers2/offchainaggregator"
+	ocr "github.com/smartcontractkit/libocr/offchainreporting2"
+	"github.com/smartcontractkit/libocr/offchainreporting2/chains/evmutil"
+	ocrtypes "github.com/smartcontractkit/libocr/offchainreporting2/types"
 )
 
 type DelegateConfig interface {
@@ -104,6 +106,9 @@ func (d Delegate) JobType() job.Type {
 	return job.OffchainReporting
 }
 
+func (Delegate) OnJobCreated(spec job.Job) {}
+func (Delegate) OnJobDeleted(spec job.Job) {}
+
 func (Delegate) AfterJobCreated(spec job.Job)  {}
 func (Delegate) BeforeJobDeleted(spec job.Job) {}
 
@@ -176,15 +181,12 @@ func (d Delegate) ServicesForSpec(jobSpec job.Job) (services []job.Service, err 
 	})
 
 	lc := ocrtypes.LocalConfig{
-		BlockchainTimeout:                      d.config.OCRBlockchainTimeout(time.Duration(concreteSpec.BlockchainTimeout)),
-		ContractConfigConfirmations:            d.config.OCRContractConfirmations(concreteSpec.ContractConfigConfirmations),
-		SkipContractConfigConfirmations:        d.config.Chain().IsL2(),
-		ContractConfigTrackerPollInterval:      d.config.OCRContractPollInterval(time.Duration(concreteSpec.ContractConfigTrackerPollInterval)),
-		ContractConfigTrackerSubscribeInterval: d.config.OCRContractSubscribeInterval(time.Duration(concreteSpec.ContractConfigTrackerSubscribeInterval)),
-		ContractTransmitterTransmitTimeout:     d.config.OCRContractTransmitterTransmitTimeout(),
-		DatabaseTimeout:                        d.config.OCRDatabaseTimeout(),
-		DataSourceTimeout:                      d.config.OCRObservationTimeout(time.Duration(concreteSpec.ObservationTimeout)),
-		DataSourceGracePeriod:                  d.config.OCRObservationGracePeriod(),
+		BlockchainTimeout:                  d.config.OCRBlockchainTimeout(time.Duration(concreteSpec.BlockchainTimeout)),
+		ContractConfigConfirmations:        d.config.OCRContractConfirmations(concreteSpec.ContractConfigConfirmations),
+		SkipContractConfigConfirmations:    d.config.Chain().IsL2(),
+		ContractConfigTrackerPollInterval:  d.config.OCRContractPollInterval(time.Duration(concreteSpec.ContractConfigTrackerPollInterval)),
+		ContractTransmitterTransmitTimeout: d.config.OCRContractTransmitterTransmitTimeout(),
+		DatabaseTimeout:                    d.config.OCRDatabaseTimeout(),
 	}
 	if d.config.Dev() {
 		// Skips config validation so we can use any config parameters we want.
@@ -213,14 +215,14 @@ func (d Delegate) ServicesForSpec(jobSpec job.Job) (services []job.Service, err 
 		if len(bootstrapPeers) < 1 {
 			return nil, errors.New("need at least one bootstrap peer")
 		}
-		kb, err := d.config.OCRKeyBundleID(concreteSpec.EncryptedOCRKeyBundleID)
-		if err != nil {
-			return nil, err
-		}
-		ocrkey, exists := d.keyStore.DecryptedOCRKey(kb)
-		if !exists {
-			return nil, errors.Errorf("OCR key '%v' does not exist", concreteSpec.EncryptedOCRKeyBundleID)
-		}
+		// kb, err := d.config.OCRKeyBundleID(concreteSpec.EncryptedOCRKeyBundleID)
+		// if err != nil {
+		// 	return nil, err
+		// }
+		// ocrkey, exists := d.keyStore.DecryptedOCRKey(kb)
+		// if !exists {
+		// 	return nil, errors.Errorf("OCR key '%v' does not exist", concreteSpec.EncryptedOCRKeyBundleID)
+		// }
 		contractABI, err := abi.JSON(strings.NewReader(offchainaggregator.OffchainAggregatorABI))
 		if err != nil {
 			return nil, errors.Wrap(err, "could not get contract ABI JSON")
@@ -243,27 +245,29 @@ func (d Delegate) ServicesForSpec(jobSpec job.Job) (services []job.Service, err 
 			d.config.ChainID(),
 		)
 
+		offchainKeyring := ocrkey.OffchainKeyring{}
+		onchainKeyring := ocrkey.EthereumKeyring{}
+
+		offchainConfigDigester := evmutil.EVMOffchainConfigDigester{
+			ChainID:         d.config.ChainID().Uint64(),
+			ContractAddress: concreteSpec.ContractAddress.Address(),
+		}
+
 		runResults := make(chan pipeline.RunWithResults, d.config.JobPipelineResultWriteQueueDepth())
 		jobSpec.PipelineSpec.JobName = jobSpec.Name.ValueOrZero()
 		jobSpec.PipelineSpec.JobID = jobSpec.ID
 		oracle, err := ocr.NewOracle(ocr.OracleArgs{
-			Database: ocrdb,
-			Datasource: &dataSource{
-				pipelineRunner: d.pipelineRunner,
-				ocrLogger:      *loggerWith,
-				jobSpec:        jobSpec,
-				spec:           *jobSpec.PipelineSpec,
-				runResults:     runResults,
-			},
-			LocalConfig:                  lc,
+			BinaryNetworkEndpointFactory: peerWrapper.Peer,
+			V2Bootstrappers:              v2BootstrapPeers,
 			ContractTransmitter:          contractTransmitter,
 			ContractConfigTracker:        tracker,
-			PrivateKeys:                  &ocrkey,
-			BinaryNetworkEndpointFactory: peerWrapper.Peer,
+			Database:                     ocrdb,
+			LocalConfig:                  lc,
 			Logger:                       ocrLogger,
-			V1Bootstrappers:              bootstrapPeers,
-			V2Bootstrappers:              v2BootstrapPeers,
 			MonitoringEndpoint:           d.monitoringEndpoint,
+			OffchainConfigDigester:       offchainConfigDigester,
+			OffchainKeyring:              &offchainKeyring,
+			OnchainKeyring:               &onchainKeyring,
 		})
 		if err != nil {
 			return nil, errors.Wrap(err, "error calling NewOracle")

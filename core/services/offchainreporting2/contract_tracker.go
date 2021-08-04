@@ -1,4 +1,4 @@
-package offchainreporting
+package offchainreporting2
 
 import (
 	"context"
@@ -20,16 +20,16 @@ import (
 	gethCommon "github.com/ethereum/go-ethereum/common"
 	gethTypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/pkg/errors"
-	"github.com/smartcontractkit/chainlink/core/internal/gethwrappers/generated/offchain_aggregator_wrapper"
+	offchain_aggregator_wrapper "github.com/smartcontractkit/chainlink/core/internal/gethwrappers2/generated/offchainaggregator"
 	"github.com/smartcontractkit/chainlink/core/logger"
 	"github.com/smartcontractkit/chainlink/core/services/eth"
 	httypes "github.com/smartcontractkit/chainlink/core/services/headtracker/types"
 	"github.com/smartcontractkit/chainlink/core/services/log"
 	"github.com/smartcontractkit/chainlink/core/store/models"
 	"github.com/smartcontractkit/chainlink/core/utils"
-	"github.com/smartcontractkit/libocr/gethwrappers/offchainaggregator"
-	"github.com/smartcontractkit/libocr/offchainreporting/confighelper"
-	ocrtypes "github.com/smartcontractkit/libocr/offchainreporting/types"
+	"github.com/smartcontractkit/libocr/gethwrappers2/offchainaggregator"
+	"github.com/smartcontractkit/libocr/offchainreporting2/chains/evmutil"
+	ocrtypes "github.com/smartcontractkit/libocr/offchainreporting2/types"
 )
 
 // configMailboxSanityLimit is the maximum number of configs that can be held
@@ -40,7 +40,6 @@ const configMailboxSanityLimit = 100
 
 var (
 	_ ocrtypes.ContractConfigTracker = &OCRContractTracker{}
-	_ log.Listener                   = &OCRContractTracker{}
 	_ httypes.HeadTrackable          = &OCRContractTracker{}
 
 	OCRContractConfigSet            = getEventTopic("ConfigSet")
@@ -54,7 +53,10 @@ type (
 	OCRContractTracker struct {
 		utils.StartStopOnce
 
-		ethClient        eth.Client
+		ethClient eth.Client
+		// XXX: Use the libocr provided Filterer and Caller so that the resulting
+		// ConfigSet can be passed to ContractConfigFromConfigSetEvent, the
+		// offchain_aggregator_wrapper for Topics and contract Address
 		contract         *offchain_aggregator_wrapper.OffchainAggregator
 		contractFilterer *offchainaggregator.OffchainAggregatorFilterer
 		contractCaller   *offchainaggregator.OffchainAggregatorCaller
@@ -181,6 +183,9 @@ func (t *OCRContractTracker) Close() error {
 	})
 }
 
+// Connect conforms to HeadTrackable
+func (t *OCRContractTracker) Connect(*models.Head) error { return nil }
+
 // OnNewLongestChain conformed to HeadTrackable and updates latestBlockHeight
 func (t *OCRContractTracker) OnNewLongestChain(_ context.Context, h models.Head) {
 	t.setLatestBlockHeight(h)
@@ -260,7 +265,7 @@ func (t *OCRContractTracker) HandleLog(lb log.Broadcast) {
 
 	var consumed bool
 	switch topics[0] {
-	case OCRContractConfigSet:
+	case offchain_aggregator_wrapper.OffchainAggregatorConfigSet{}.Topic():
 		var configSet *offchainaggregator.OffchainAggregatorConfigSet
 		configSet, err = t.contractFilterer.ParseConfigSet(raw)
 		if err != nil {
@@ -269,13 +274,13 @@ func (t *OCRContractTracker) HandleLog(lb log.Broadcast) {
 			return
 		}
 		configSet.Raw = lb.RawLog()
-		cc := confighelper.ContractConfigFromConfigSetEvent(*configSet)
+		cc := evmutil.ContractConfigFromConfigSetEvent(*configSet)
 
 		wasOverCapacity := t.configsMB.Deliver(cc)
 		if wasOverCapacity {
 			t.logger.Error("config mailbox is over capacity - dropped the oldest unprocessed item")
 		}
-	case OCRContractLatestRoundRequested:
+	case offchain_aggregator_wrapper.OffchainAggregatorRoundRequested{}.Topic():
 		var rr *offchainaggregator.OffchainAggregatorRoundRequested
 		rr, err = t.contractFilterer.ParseRoundRequested(raw)
 		if err != nil {
@@ -320,14 +325,20 @@ func IsLaterThan(incoming gethTypes.Log, existing gethTypes.Log) bool {
 		(incoming.BlockNumber == existing.BlockNumber && incoming.TxIndex == existing.TxIndex && incoming.Index > existing.Index)
 }
 
+// IsV2Job complies with LogListener interface
+func (t *OCRContractTracker) IsV2Job() bool {
+	return true
+}
+
 // JobID complies with LogListener interface
 func (t *OCRContractTracker) JobID() int32 {
 	return t.jobID
 }
 
-// SubscribeToNewConfigs returns the tracker aliased as a ContractConfigSubscription
-func (t *OCRContractTracker) SubscribeToNewConfigs(context.Context) (ocrtypes.ContractConfigSubscription, error) {
-	return (*OCRContractConfigSubscription)(t), nil
+// Notify returns a channel that can wake up the contract tracker to let it
+// know when a new config is available
+func (t *OCRContractTracker) Notify() <-chan struct{} {
+	return nil
 }
 
 // LatestConfigDetails queries the eth node
@@ -337,7 +348,7 @@ func (t *OCRContractTracker) LatestConfigDetails(ctx context.Context) (changedIn
 	defer cancel()
 
 	opts := bind.CallOpts{Context: ctx, Pending: false}
-	result, err := t.contractCaller.LatestConfigDetails(&opts)
+	result, err := t.contract.LatestConfigDetails(&opts)
 	if err != nil {
 		return 0, configDigest, errors.Wrap(err, "error getting LatestConfigDetails")
 	}
@@ -346,6 +357,11 @@ func (t *OCRContractTracker) LatestConfigDetails(ctx context.Context) (changedIn
 		return 0, configDigest, errors.Wrap(err, "error getting config digest")
 	}
 	return uint64(result.BlockNumber), configDigest, err
+}
+
+// Return the latest configuration
+func (t *OCRContractTracker) LatestConfig(ctx context.Context, changedInBlock uint64) (ocrtypes.ContractConfig, error) {
+	return ocrtypes.ContractConfig{}, nil
 }
 
 // ConfigFromLogs queries the eth node for logs for this contract
@@ -380,7 +396,7 @@ func (t *OCRContractTracker) ConfigFromLogs(ctx context.Context, changedInBlock 
 	if latest.Raw.Address != t.contract.Address() {
 		return c, errors.Errorf("log address of 0x%x does not match configured contract address of 0x%x", latest.Raw.Address, t.contract.Address())
 	}
-	return confighelper.ContractConfigFromConfigSetEvent(*latest), err
+	return evmutil.ContractConfigFromConfigSetEvent(*latest), err
 }
 
 // LatestBlockHeight queries the eth node for the most recent header

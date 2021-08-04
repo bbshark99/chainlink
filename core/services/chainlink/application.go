@@ -36,6 +36,7 @@ import (
 	"github.com/smartcontractkit/chainlink/core/services/keystore/keys/p2pkey"
 	"github.com/smartcontractkit/chainlink/core/services/log"
 	"github.com/smartcontractkit/chainlink/core/services/offchainreporting"
+	"github.com/smartcontractkit/chainlink/core/services/offchainreporting2"
 	"github.com/smartcontractkit/chainlink/core/services/periodicbackup"
 	"github.com/smartcontractkit/chainlink/core/services/pipeline"
 	"github.com/smartcontractkit/chainlink/core/services/postgres"
@@ -46,7 +47,7 @@ import (
 	strpkg "github.com/smartcontractkit/chainlink/core/store"
 	"github.com/smartcontractkit/chainlink/core/store/config"
 	"github.com/smartcontractkit/chainlink/core/utils"
-	ocrcommontypes "github.com/smartcontractkit/libocr/offchainreporting/types"
+	ocrcommontypes "github.com/smartcontractkit/libocr/commontypes"
 	"go.uber.org/multierr"
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/guregu/null.v4"
@@ -292,6 +293,28 @@ func NewApplication(cfg *config.Config, ethClient eth.Client, advisoryLocker pos
 		)
 	} else {
 		logger.Debug("Off-chain reporting disabled")
+	}
+
+	if (cfg.Dev() && cfg.OCR2P2PListenPort() > 0) || cfg.FeatureOffchainReporting2() {
+		logger.Debug("Off-chain reporting v2 enabled")
+		concretePW := offchainreporting2.NewSingletonPeerWrapper(keyStore.OCR(), cfg, store.DB)
+		subservices = append(subservices, concretePW)
+		delegates[job.OffchainReporting] = offchainreporting2.NewDelegate(
+			store.DB,
+			txManager,
+			jobORM,
+			cfg,
+			keyStore.OCR(),
+			pipelineRunner,
+			ethClient,
+			logBroadcaster,
+			concretePW,
+			monitoringEndpoint,
+			cfg.Chain(),
+			headBroadcaster,
+		)
+	} else {
+		logger.Debug("Off-chain reporting v2 disabled")
 	}
 
 	externalInitiatorManager := webhook.NewExternalInitiatorManager(store.DB, utils.UnrestrictedClient)

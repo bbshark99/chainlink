@@ -1,6 +1,10 @@
 package offchainreporting
 
 import (
+<<<<<<< Updated upstream
+	ocrcommontypes "github.com/smartcontractkit/libocr/commontypes"
+=======
+>>>>>>> Stashed changes
 	"io"
 	"net"
 	"strings"
