@@ -18,15 +18,8 @@ func Test_SingletonPeerWrapper_Start(t *testing.T) {
 
 	db := store.DB
 
-	t.Run("with locked KeyStore returns nil", func(t *testing.T) {
-		keyStore := cltest.NewKeyStore(t, db).OCR()
-		pw := offchainreporting.NewSingletonPeerWrapper(keyStore, store.Config, store.DB)
-
-		require.NoError(t, pw.Start())
-	})
-
 	// Clear out fixture
-	require.NoError(t, db.Exec(`DELETE FROM encrypted_p2p_keys`).Error)
+	require.NoError(t, db.Exec(`DELETE FROM encrypted_key_rings`).Error)
 
 	t.Run("with no p2p keys returns nil", func(t *testing.T) {
 		keyStore := cltest.NewKeyStore(t, db).OCR()

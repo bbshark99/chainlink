@@ -62,8 +62,8 @@ func TestP2PKeysController_Create_HappyPath(t *testing.T) {
 
 	var peerID p2pkey.PeerID
 	peerID.UnmarshalText([]byte(resource.PeerID))
-	_, exists := OCRKeyStore.GetP2PKey(peerID.String())
-	assert.Equal(t, exists, true)
+	_, err = OCRKeyStore.GetP2PKey(peerID.Raw())
+	require.NoError(t, err)
 }
 
 func TestP2PKeysController_Delete_InvalidP2PKey(t *testing.T) {
