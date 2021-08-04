@@ -57,11 +57,12 @@ func TestRunner(t *testing.T) {
 	eventBroadcaster := postgres.NewEventBroadcaster(config.DatabaseURL(), 0, 0)
 	eventBroadcaster.Start()
 	defer eventBroadcaster.Close()
-	ethKeyStore := cltest.NewKeyStore(t, db).Eth()
+	keyStore := cltest.NewKeyStore(t, db)
+	ethKeyStore := keyStore.Eth()
 
 	pipelineORM := pipeline.NewORM(db)
 	runner := pipeline.NewRunner(pipelineORM, config, nil, nil, nil, nil)
-	jobORM := job.NewORM(db, config.Config, pipelineORM, eventBroadcaster, &postgres.NullAdvisoryLocker{})
+	jobORM := job.NewORM(db, config.Config, pipelineORM, eventBroadcaster, &postgres.NullAdvisoryLocker{}, keyStore)
 	defer jobORM.Close()
 
 	runner.Start()
@@ -844,7 +845,7 @@ observationSource   = """
 		_ = cltest.CreateJobRunViaExternalInitiatorV2(t, app, jobUUID, *eia, cltest.MustJSONMarshal(t, eiRequest))
 
 		pipelineORM := pipeline.NewORM(app.Store.ORM.DB)
-		jobORM := job.NewORM(app.Store.ORM.DB, app.Store.Config, pipelineORM, &postgres.NullEventBroadcaster{}, &postgres.NullAdvisoryLocker{})
+		jobORM := job.NewORM(app.Store.ORM.DB, app.Store.Config, pipelineORM, &postgres.NullEventBroadcaster{}, &postgres.NullAdvisoryLocker{}, app.KeyStore)
 
 		// Trigger v2/resume
 		select {

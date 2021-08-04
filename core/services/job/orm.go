@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/smartcontractkit/chainlink/core/logger"
+	"github.com/smartcontractkit/chainlink/core/services/keystore"
 	"github.com/smartcontractkit/chainlink/core/services/pipeline"
 	"github.com/smartcontractkit/chainlink/core/services/postgres"
 	"github.com/smartcontractkit/chainlink/core/store/models"
@@ -55,6 +56,7 @@ type ORM interface {
 type orm struct {
 	db                  *gorm.DB
 	config              Config
+	keyStore            keystore.Master
 	advisoryLocker      postgres.AdvisoryLocker
 	advisoryLockClassID int32
 	pipelineORM         pipeline.ORM
@@ -65,10 +67,18 @@ type orm struct {
 
 var _ ORM = (*orm)(nil)
 
-func NewORM(db *gorm.DB, cfg Config, pipelineORM pipeline.ORM, eventBroadcaster postgres.EventBroadcaster, advisoryLocker postgres.AdvisoryLocker) *orm {
+func NewORM(
+	db *gorm.DB,
+	cfg Config,
+	pipelineORM pipeline.ORM,
+	eventBroadcaster postgres.EventBroadcaster,
+	advisoryLocker postgres.AdvisoryLocker,
+	keyStore keystore.Master,
+) *orm {
 	return &orm{
 		db:                  db,
 		config:              cfg,
+		keyStore:            keyStore,
 		advisoryLocker:      advisoryLocker,
 		advisoryLockClassID: postgres.AdvisoryLockClassID_JobSpawner,
 		pipelineORM:         pipelineORM,
@@ -201,18 +211,28 @@ func (o *orm) CreateJob(ctx context.Context, jobSpec *Job, p pipeline.Pipeline) 
 		}
 		jobSpec.FluxMonitorSpecID = &jobSpec.FluxMonitorSpec.ID
 	case OffchainReporting:
-		err := tx.Create(&jobSpec.OffchainreportingOracleSpec).Error
-		pqErr, ok := err.(*pgconn.PgError)
-		if err != nil && ok && pqErr.Code == "23503" {
-			if pqErr.ConstraintName == "offchainreporting_oracle_specs_p2p_peer_id_fkey" {
-				return jb, errors.Wrapf(ErrNoSuchPeerID, "%v", jobSpec.OffchainreportingOracleSpec.P2PPeerID)
-			}
-			if jobSpec.OffchainreportingOracleSpec != nil && !jobSpec.OffchainreportingOracleSpec.IsBootstrapPeer {
-				if pqErr.ConstraintName == "offchainreporting_oracle_specs_transmitter_address_fkey" {
-					return jb, errors.Wrapf(ErrNoSuchTransmitterAddress, "%v", jobSpec.OffchainreportingOracleSpec.TransmitterAddress)
-				}
-			}
+		_, err := o.keyStore.OCR().GetOCRKey(jobSpec.OffchainreportingOracleSpec.EncryptedOCRKeyBundleID.String())
+		if err != nil {
+			return jb, errors.Wrapf(ErrNoSuchKeyBundle, "%v", jobSpec.OffchainreportingOracleSpec.EncryptedOCRKeyBundleID)
 		}
+		_, err = o.keyStore.OCR().GetP2PKey(jobSpec.OffchainreportingOracleSpec.P2PPeerID.Raw())
+		if err != nil {
+			return jb, errors.Wrapf(ErrNoSuchPeerID, "%v", jobSpec.OffchainreportingOracleSpec.P2PPeerID)
+		}
+		_, err = o.keyStore.Eth().KeyByAddress(jobSpec.OffchainreportingOracleSpec.TransmitterAddress.Address())
+		if err != nil {
+			return jb, errors.Wrapf(ErrNoSuchTransmitterAddress, "%v", jobSpec.OffchainreportingOracleSpec.TransmitterAddress)
+		}
+
+		err = tx.Create(&jobSpec.OffchainreportingOracleSpec).Error
+		// pqErr, ok := err.(*pgconn.PgError)
+		// if err != nil && ok && pqErr.Code == "23503" {
+		// 	if jobSpec.OffchainreportingOracleSpec != nil && !jobSpec.OffchainreportingOracleSpec.IsBootstrapPeer {
+		// 		if pqErr.ConstraintName == "offchainreporting_oracle_specs_transmitter_address_fkey" {
+		// 			return jb, errors.Wrapf(ErrNoSuchTransmitterAddress, "%v", jobSpec.OffchainreportingOracleSpec.TransmitterAddress)
+		// 		}
+		// 	}
+		// }
 		if err != nil {
 			return jb, errors.Wrap(err, "failed to create OffchainreportingOracleSpec for jobSpec")
 		}

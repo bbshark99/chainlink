@@ -71,8 +71,8 @@ func buildVrfUni(t *testing.T, db *gorm.DB, cfg *config.Config) vrfUniverse {
 	require.NoError(t, err)
 	t.Cleanup(func() { eb.Close() })
 	prm := pipeline.NewORM(db)
-	jrm := job.NewORM(db, cfg, prm, eb, &postgres.NullAdvisoryLocker{})
 	ks := keystore.New(db, utils.FastScryptParams)
+	jrm := job.NewORM(db, cfg, prm, eb, &postgres.NullAdvisoryLocker{}, ks)
 	txm := new(bptxmmocks.TxManager)
 	t.Cleanup(func() { txm.AssertExpectations(t) })
 	pr := pipeline.NewRunner(prm, cfg, ec, ks.Eth(), ks.VRF(), txm)
@@ -539,7 +539,7 @@ func TestFulfilledCheck(t *testing.T) {
 		types.Log{
 			// Data has all the NON-indexed parameters
 			Data: bytes.Join([][]byte{
-				vuni.vrfkey.MustHash().Bytes(),           // key hash
+				vuni.vrfkey.PublicKey.MustHash().Bytes(), // key hash
 				common.BigToHash(big.NewInt(42)).Bytes(), // seed
 				utils.NewHash().Bytes(),                  // sender
 				utils.NewHash().Bytes(),                  // fee

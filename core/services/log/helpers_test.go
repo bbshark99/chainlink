@@ -218,8 +218,9 @@ func newLogListenerWithV2Job(t *testing.T, store *store.Store, name string) *sim
 		PipelineSpec:  &pipeline.Spec{},
 		ExternalJobID: uuid.NewV4(),
 	}
+	keyStore := cltest.NewKeyStore(t, store.DB)
 
-	pipelineHelper := cltest.NewJobPipelineV2(t, cltest.NewTestConfig(t), store.DB, nil, nil, nil)
+	pipelineHelper := cltest.NewJobPipelineV2(t, cltest.NewTestConfig(t), store.DB, nil, keyStore, nil)
 	_, err := pipelineHelper.Jrm.CreateJob(context.Background(), job, job.Pipeline)
 	require.NoError(t, err)
 

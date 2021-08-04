@@ -261,7 +261,7 @@ func NewApplication(cfg *config.Config, ethClient eth.Client, advisoryLocker pos
 	var (
 		pipelineORM    = pipeline.NewORM(store.DB)
 		pipelineRunner = pipeline.NewRunner(pipelineORM, cfg, ethClient, keyStore.Eth(), keyStore.VRF(), txManager)
-		jobORM         = job.NewORM(store.ORM.DB, cfg, pipelineORM, eventBroadcaster, advisoryLocker)
+		jobORM         = job.NewORM(store.ORM.DB, cfg, pipelineORM, eventBroadcaster, advisoryLocker, keyStore)
 	)
 
 	var (

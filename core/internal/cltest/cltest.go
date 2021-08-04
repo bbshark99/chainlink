@@ -270,11 +270,11 @@ type JobPipelineV2TestHelper struct {
 	Pr  pipeline.Runner
 }
 
-func NewJobPipelineV2(t testing.TB, tc *TestConfig, db *gorm.DB, ethClient eth.Client, keyStore pipeline.ETHKeyStore, txManager pipeline.TxManager) JobPipelineV2TestHelper {
+func NewJobPipelineV2(t testing.TB, tc *TestConfig, db *gorm.DB, ethClient eth.Client, keyStore keystore.Master, txManager pipeline.TxManager) JobPipelineV2TestHelper {
 	prm, eb, cleanup := NewPipelineORM(t, tc, db)
-	jrm := job.NewORM(db, tc.Config, prm, eb, &postgres.NullAdvisoryLocker{})
+	jrm := job.NewORM(db, tc.Config, prm, eb, &postgres.NullAdvisoryLocker{}, keyStore)
 	t.Cleanup(cleanup)
-	pr := pipeline.NewRunner(prm, tc.Config, ethClient, keyStore, nil, txManager)
+	pr := pipeline.NewRunner(prm, tc.Config, ethClient, keyStore.Eth(), nil, txManager)
 	return JobPipelineV2TestHelper{
 		prm,
 		eb,

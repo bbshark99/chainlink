@@ -72,8 +72,9 @@ func NewDirectRequestUniverseWithConfig(t *testing.T, drConfig testConfig) *Dire
 	config := cltest.NewTestConfig(t)
 	store, cleanupDB := cltest.NewStoreWithConfig(t, config)
 	orm, eventBroadcaster, cleanupPipeline := cltest.NewPipelineORM(t, config, store.DB)
+	keyStore := cltest.NewKeyStore(t, store.DB)
 
-	jobORM := job.NewORM(store.DB, store.Config, orm, eventBroadcaster, &postgres.NullAdvisoryLocker{})
+	jobORM := job.NewORM(store.DB, store.Config, orm, eventBroadcaster, &postgres.NullAdvisoryLocker{}, keyStore)
 
 	cleanup := func() {
 		cleanupDB()

@@ -80,6 +80,8 @@ func TestORM_UpdateFluxMonitorRoundStats(t *testing.T) {
 	corestore, cleanup := cltest.NewStore(t)
 	t.Cleanup(cleanup)
 
+	keyStore := cltest.NewKeyStore(t, corestore.DB)
+
 	// Instantiate a real pipeline ORM because we need to create a pipeline run
 	// for the foreign key constraint of the stats record
 	eventBroadcaster := postgres.NewEventBroadcaster(
@@ -90,7 +92,7 @@ func TestORM_UpdateFluxMonitorRoundStats(t *testing.T) {
 	pipelineORM := pipeline.NewORM(corestore.DB)
 	// Instantiate a real job ORM because we need to create a job to satisfy
 	// a check in pipeline.CreateRun
-	jobORM := job.NewORM(corestore.ORM.DB, corestore.Config, pipelineORM, eventBroadcaster, &postgres.NullAdvisoryLocker{})
+	jobORM := job.NewORM(corestore.ORM.DB, corestore.Config, pipelineORM, eventBroadcaster, &postgres.NullAdvisoryLocker{}, keyStore)
 	orm := fluxmonitorv2.NewORM(corestore.DB, nil, nil)
 
 	address := cltest.NewAddress()

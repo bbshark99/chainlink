@@ -1121,7 +1121,7 @@ observationSource   = """
 		_ = cltest.CreateJobRunViaExternalInitiatorV2(t, app, jobUUID, *eia, cltest.MustJSONMarshal(t, eiRequest))
 
 		pipelineORM := pipeline.NewORM(app.Store.DB)
-		jobORM := job.NewORM(app.Store.ORM.DB, app.Store.Config, pipelineORM, &postgres.NullEventBroadcaster{}, &postgres.NullAdvisoryLocker{})
+		jobORM := job.NewORM(app.Store.ORM.DB, app.Store.Config, pipelineORM, &postgres.NullEventBroadcaster{}, &postgres.NullAdvisoryLocker{}, app.KeyStore)
 
 		runs := cltest.WaitForPipelineComplete(t, 0, jobID, 1, 2, jobORM, 5*time.Second, 300*time.Millisecond)
 		require.Len(t, runs, 1)
@@ -2105,7 +2105,7 @@ func TestIntegration_DirectRequest(t *testing.T) {
 	defer eventBroadcaster.Close()
 
 	pipelineORM := pipeline.NewORM(store.DB)
-	jobORM := job.NewORM(store.ORM.DB, store.Config, pipelineORM, eventBroadcaster, &postgres.NullAdvisoryLocker{})
+	jobORM := job.NewORM(store.ORM.DB, store.Config, pipelineORM, eventBroadcaster, &postgres.NullAdvisoryLocker{}, app.KeyStore)
 
 	directRequestSpec := string(cltest.MustReadFile(t, "../testdata/tomlspecs/direct-request-spec.toml"))
 	directRequestSpec = strings.Replace(directRequestSpec, "http://example.com", httpServer.URL, 1)

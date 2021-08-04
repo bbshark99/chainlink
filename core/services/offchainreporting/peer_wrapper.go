@@ -1,7 +1,6 @@
 package offchainreporting
 
 import (
-	"fmt"
 	"net"
 	"strings"
 	"time"
@@ -111,7 +110,6 @@ func (p *SingletonPeerWrapper) Start() error {
 			checkedKeys = append(checkedKeys, peerID.String())
 		}
 		keys := strings.Join(checkedKeys, ", ")
-		fmt.Println("keys", keys)
 		if !matched {
 			if configuredPeerID == "" {
 				return errors.Errorf("multiple p2p keys found but peer ID was not set. You must specify P2P_PEER_ID if you have more than one key. Keys available: %s", keys)

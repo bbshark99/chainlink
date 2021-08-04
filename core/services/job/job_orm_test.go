@@ -33,12 +33,13 @@ func TestORM(t *testing.T) {
 	config, oldORM, cleanupDB := heavyweight.FullTestORM(t, "services_job_orm", true, true)
 	defer cleanupDB()
 	db := oldORM.DB
-	ethKeyStore := cltest.NewKeyStore(t, db).Eth()
+	keyStore := cltest.NewKeyStore(t, db)
+	ethKeyStore := keyStore.Eth()
 
 	pipelineORM, eventBroadcaster, cleanupORM := cltest.NewPipelineORM(t, config, db)
 	defer cleanupORM()
 
-	orm := job.NewORM(db, config.Config, pipelineORM, eventBroadcaster, &postgres.NullAdvisoryLocker{})
+	orm := job.NewORM(db, config.Config, pipelineORM, eventBroadcaster, &postgres.NullAdvisoryLocker{}, keyStore)
 	defer orm.Close()
 
 	_, bridge := cltest.NewBridgeType(t, "voter_turnout", "http://blah.com")
@@ -82,7 +83,7 @@ func TestORM(t *testing.T) {
 	require.NoError(t, err)
 	defer d.Close()
 
-	orm2 := job.NewORM(db2, config.Config, pipeline.NewORM(db2), eventBroadcaster, &postgres.NullAdvisoryLocker{})
+	orm2 := job.NewORM(db2, config.Config, pipeline.NewORM(db2), eventBroadcaster, &postgres.NullAdvisoryLocker{}, keyStore)
 	defer orm2.Close()
 
 	t.Run("it correctly returns the unclaimed jobs in the DB", func(t *testing.T) {
@@ -231,7 +232,8 @@ func TestORM_CheckForDeletedJobs(t *testing.T) {
 	store, cleanup := cltest.NewStoreWithConfig(t, config)
 	defer cleanup()
 	db := store.DB
-	ethKeyStore := cltest.NewKeyStore(t, db).Eth()
+	keyStore := cltest.NewKeyStore(t, db)
+	ethKeyStore := keyStore.Eth()
 
 	_, address := cltest.MustInsertRandomKey(t, db, ethKeyStore)
 
@@ -243,7 +245,7 @@ func TestORM_CheckForDeletedJobs(t *testing.T) {
 	pipelineORM, eventBroadcaster, cleanupORM := cltest.NewPipelineORM(t, config, db)
 	defer cleanupORM()
 
-	orm := job.NewORM(db, config.Config, pipelineORM, eventBroadcaster, &postgres.NullAdvisoryLocker{})
+	orm := job.NewORM(db, config.Config, pipelineORM, eventBroadcaster, &postgres.NullAdvisoryLocker{}, keyStore)
 	defer orm.Close()
 
 	claimedJobs := make([]job.Job, 3)
@@ -274,7 +276,8 @@ func TestORM_UnclaimJob(t *testing.T) {
 	store, cleanup := cltest.NewStoreWithConfig(t, config)
 	defer cleanup()
 	db := store.DB
-	ethKeyStore := cltest.NewKeyStore(t, db).Eth()
+	keyStore := cltest.NewKeyStore(t, db)
+	ethKeyStore := keyStore.Eth()
 
 	_, address := cltest.MustInsertRandomKey(t, db, ethKeyStore)
 
@@ -282,7 +285,7 @@ func TestORM_UnclaimJob(t *testing.T) {
 	defer cleanupORM()
 
 	advisoryLocker := new(mocks.AdvisoryLocker)
-	orm := job.NewORM(db, config.Config, pipelineORM, eventBroadcaster, advisoryLocker)
+	orm := job.NewORM(db, config.Config, pipelineORM, eventBroadcaster, advisoryLocker, keyStore)
 	defer orm.Close()
 
 	require.NoError(t, orm.UnclaimJob(context.Background(), 42))
@@ -319,7 +322,7 @@ func TestORM_DeleteJob_DeletesAssociatedRecords(t *testing.T) {
 
 	pipelineORM, eventBroadcaster, cleanupORM := cltest.NewPipelineORM(t, config, db)
 	defer cleanupORM()
-	orm := job.NewORM(db, config.Config, pipelineORM, eventBroadcaster, &postgres.NullAdvisoryLocker{})
+	orm := job.NewORM(db, config.Config, pipelineORM, eventBroadcaster, &postgres.NullAdvisoryLocker{}, keyStore)
 	defer orm.Close()
 
 	t.Run("it deletes records for offchainreporting jobs", func(t *testing.T) {

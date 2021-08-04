@@ -47,7 +47,8 @@ func TestPipelineORM_Integration(t *testing.T) {
 	config.Set("MAX_HTTP_ATTEMPTS", "1")
 	defer cleanupDB()
 	db := oldORM.DB
-	ethKeyStore := cltest.NewKeyStore(t, db).Eth()
+	keyStore := cltest.NewKeyStore(t, db)
+	ethKeyStore := keyStore.Eth()
 
 	_, transmitterAddress := cltest.MustInsertRandomKey(t, db, ethKeyStore)
 
@@ -121,7 +122,7 @@ func TestPipelineORM_Integration(t *testing.T) {
 		defer cleanup()
 		runner := pipeline.NewRunner(orm, config, nil, nil, nil, nil)
 		defer runner.Close()
-		jobORM := job.NewORM(db, config.Config, orm, eventBroadcaster, &postgres.NullAdvisoryLocker{})
+		jobORM := job.NewORM(db, config.Config, orm, eventBroadcaster, &postgres.NullAdvisoryLocker{}, keyStore)
 		defer jobORM.Close()
 
 		dbSpec := makeVoterTurnoutOCRJobSpec(t, db, transmitterAddress)
